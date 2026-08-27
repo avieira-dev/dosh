@@ -22,8 +22,22 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 
 func (ed *Editor) Backspace() {
 	if ed.Column > 0 {
-		ed.Lines[ed.Row].Content = append(ed.Lines[ed.Row].Content[:ed.Column-1], ed.Lines[ed.Row].Content[ed.Column:]...)
-		ed.Column--
+		if len(ed.Lines[ed.Row].Content) > 0 {
+			ed.Lines[ed.Row].Content = append(ed.Lines[ed.Row].Content[:ed.Column-1], ed.Lines[ed.Row].Content[ed.Column:]...)
+			ed.Column--
+		}
+	} else if ed.Row > 0 {
+		previous := ed.Lines[ed.Row-1].Content
+		current := ed.Lines[ed.Row].Content
+
+		ed.Column = len(previous)
+
+		previous = append(previous, current...)
+		ed.Lines[ed.Row-1].Content = previous
+
+		ed.Lines = append(ed.Lines[:ed.Row], ed.Lines[ed.Row+1:]...)
+
+		ed.Row--
 	}
 }
 
@@ -50,6 +64,29 @@ func (ed *Editor) Enter() {
 
 	ed.Row++
 	ed.Column = 0
+}
+
+func (ed *Editor) MoveUp() {
+	if ed.Row > 0 {
+		if len(ed.Lines[ed.Row-1].Content) < len(ed.Lines[ed.Row].Content) {
+			ed.Row--
+			ed.Column = len(ed.Lines[ed.Row].Content)
+		} else {
+			ed.Row--
+		}
+
+	}
+}
+
+func (ed *Editor) MoveDown() {
+	if ed.Row < len(ed.Lines)-1 {
+		if len(ed.Lines[ed.Row+1].Content) < len(ed.Lines[ed.Row].Content) {
+			ed.Row++
+			ed.Column = len(ed.Lines[ed.Row].Content)
+		} else {
+			ed.Row++
+		}
+	}
 }
 
 func (ed *Editor) MoveLeft() {

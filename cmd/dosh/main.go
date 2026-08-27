@@ -36,6 +36,10 @@ func main() {
 
 		if value, ok := key.Value.(input.SpecialKey); ok {
 			switch value {
+			case input.KeyArrowUp:
+				ed.MoveUp()
+			case input.KeyArrowDown:
+				ed.MoveDown()
 			case input.KeyArrowLeft:
 				ed.MoveLeft()
 			case input.KeyArrowRight:
