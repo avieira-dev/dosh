@@ -49,6 +49,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Horizontal cursor movement
 - Vertical cursor movement
 - Arrow key support
+- Delete key parsing
 - ANSI terminal rendering
 - Clean terminal restoration on exit
 
@@ -114,7 +115,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Terminal module           | ████████████████████ `100%` |
 | Rendering abstraction     | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Input command abstraction | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Automated tests            | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Automated tests           | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### Future
 
@@ -141,7 +142,8 @@ dosh/
 │   │   └── line.go
 │   ├── input/
 │   │   ├── input.go
-│   │   └── key.go
+│   │   ├── key.go
+│   │   └── parser.go
 │   └── terminal/
 │       └── screen.go
 ├── .gitignore

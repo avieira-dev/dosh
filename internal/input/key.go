@@ -1,13 +1,13 @@
 package input
 
-type SimpleKey byte
+type SimpleKey rune
 type SpecialKey int
 type KeyType int
 
 const (
 	KeyUnknown SpecialKey = iota
 
-	KeyArrowUp 
+	KeyArrowUp
 	KeyArrowDown
 	KeyArrowRight
 	KeyArrowLeft
@@ -17,6 +17,7 @@ const (
 	KeyTab
 	KeyEscape
 	KeyCtrlC
+	KeyDelete
 )
 
 const (
@@ -25,6 +26,6 @@ const (
 )
 
 type Key struct {
-	Type KeyType
+	Type  KeyType
 	Value any
 }
