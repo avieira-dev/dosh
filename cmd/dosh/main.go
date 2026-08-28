@@ -52,6 +52,8 @@ func main() {
 				ed.Tab()
 			case input.KeyEnter:
 				ed.Enter()
+			case input.KeyDelete:
+				ed.Delete()
 			}
 		}
 

@@ -9,7 +9,7 @@ const (
 )
 
 type Parser struct {
-	State  ParserState
+	State ParserState
 	Buffer []byte
 }
 

@@ -8,8 +8,8 @@ import (
 )
 
 type Editor struct {
-	Lines  []Line
-	Row    int
+	Lines []Line
+	Row int
 	Column int
 }
 
@@ -22,23 +22,36 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 
 func (ed *Editor) Backspace() {
 	if ed.Column > 0 {
-		if len(ed.Lines[ed.Row].Content) > 0 {
-			ed.Lines[ed.Row].Content = append(ed.Lines[ed.Row].Content[:ed.Column-1], ed.Lines[ed.Row].Content[ed.Column:]...)
-			ed.Column--
-		}
-	} else if ed.Row > 0 {
-		previous := ed.Lines[ed.Row-1].Content
-		current := ed.Lines[ed.Row].Content
+        current := ed.Lines[ed.Row].Content
+        ed.Lines[ed.Row].Content = append(current[:ed.Column-1], current[ed.Column:]...)
+        ed.Column--
+        return
+    }
 
-		ed.Column = len(previous)
+	if ed.Row > 0 {
+        previous := ed.Lines[ed.Row-1].Content
+        current := ed.Lines[ed.Row].Content
 
-		previous = append(previous, current...)
-		ed.Lines[ed.Row-1].Content = previous
+        ed.Column = len(previous)
+        ed.Lines[ed.Row-1].Content = append(previous, current...)
+        ed.Lines = append(ed.Lines[:ed.Row], ed.Lines[ed.Row+1:]...)
+        ed.Row--
+    }
+}
 
-		ed.Lines = append(ed.Lines[:ed.Row], ed.Lines[ed.Row+1:]...)
+func (ed *Editor) Delete() {
+	currentLine := ed.Lines[ed.Row].Content
 
-		ed.Row--
+	if ed.Column < len(currentLine) {
+		ed.Lines[ed.Row].Content = append(currentLine[:ed.Column], currentLine[ed.Column+1:]...)
+        return
 	}
+
+	if ed.Column == len(currentLine) && ed.Row < len(ed.Lines)-1 {
+        proximaLinha := ed.Lines[ed.Row+1].Content
+        ed.Lines[ed.Row].Content = append(currentLine, proximaLinha...)
+        ed.Lines = append(ed.Lines[:ed.Row+1], ed.Lines[ed.Row+2:]...)
+    }
 }
 
 func (ed *Editor) Tab() {
