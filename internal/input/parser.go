@@ -52,6 +52,10 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 			specialKey = KeyArrowRight
 		case 68:
 			specialKey = KeyArrowLeft
+		case 70:
+			specialKey = KeyEnd
+		case 72:
+			specialKey = KeyHome
 		case 126:
 			if len(parser.Buffer) == 4 {
 				if parser.Buffer[0] == 27 && parser.Buffer[1] == '[' && parser.Buffer[2] == '3' && parser.Buffer[3] == '~' {

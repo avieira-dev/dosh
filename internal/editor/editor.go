@@ -22,21 +22,21 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 
 func (ed *Editor) Backspace() {
 	if ed.Column > 0 {
-        current := ed.Lines[ed.Row].Content
-        ed.Lines[ed.Row].Content = append(current[:ed.Column-1], current[ed.Column:]...)
-        ed.Column--
-        return
-    }
+		current := ed.Lines[ed.Row].Content
+		ed.Lines[ed.Row].Content = append(current[:ed.Column-1], current[ed.Column:]...)
+		ed.Column--
+		return
+	}
 
 	if ed.Row > 0 {
-        previous := ed.Lines[ed.Row-1].Content
-        current := ed.Lines[ed.Row].Content
+		previous := ed.Lines[ed.Row-1].Content
+		current := ed.Lines[ed.Row].Content
 
-        ed.Column = len(previous)
-        ed.Lines[ed.Row-1].Content = append(previous, current...)
-        ed.Lines = append(ed.Lines[:ed.Row], ed.Lines[ed.Row+1:]...)
-        ed.Row--
-    }
+		ed.Column = len(previous)
+		ed.Lines[ed.Row-1].Content = append(previous, current...)
+		ed.Lines = append(ed.Lines[:ed.Row], ed.Lines[ed.Row+1:]...)
+		ed.Row--
+	}
 }
 
 func (ed *Editor) Delete() {
@@ -44,14 +44,14 @@ func (ed *Editor) Delete() {
 
 	if ed.Column < len(currentLine) {
 		ed.Lines[ed.Row].Content = append(currentLine[:ed.Column], currentLine[ed.Column+1:]...)
-        return
+		return
 	}
 
 	if ed.Column == len(currentLine) && ed.Row < len(ed.Lines)-1 {
-        proximaLinha := ed.Lines[ed.Row+1].Content
-        ed.Lines[ed.Row].Content = append(currentLine, proximaLinha...)
-        ed.Lines = append(ed.Lines[:ed.Row+1], ed.Lines[ed.Row+2:]...)
-    }
+		proximaLinha := ed.Lines[ed.Row+1].Content
+		ed.Lines[ed.Row].Content = append(currentLine, proximaLinha...)
+		ed.Lines = append(ed.Lines[:ed.Row+1], ed.Lines[ed.Row+2:]...)
+	}
 }
 
 func (ed *Editor) Tab() {
@@ -120,6 +120,14 @@ func (ed *Editor) MoveRight() {
 		ed.Row++
 		ed.Column = 0
 	}
+}
+
+func (ed *Editor) Home() {
+	ed.Column = 0
+}
+
+func (ed *Editor) End() {
+	ed.Column = len(ed.Lines[ed.Row].Content)
 }
 
 func Render(ed *Editor) {

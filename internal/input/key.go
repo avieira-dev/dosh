@@ -18,6 +18,8 @@ const (
 	KeyEscape
 	KeyCtrlC
 	KeyDelete
+	KeyHome
+	KeyEnd
 )
 
 const (

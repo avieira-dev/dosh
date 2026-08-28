@@ -54,6 +54,10 @@ func main() {
 				ed.Enter()
 			case input.KeyDelete:
 				ed.Delete()
+			case input.KeyHome:
+				ed.Home()
+			case input.KeyEnd:
+				ed.End()
 			}
 		}
 
