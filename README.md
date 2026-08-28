@@ -43,7 +43,9 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Raw keyboard input
 - Character insertion
 - Character deletion with Backspace
+- Character deletion with Delete
 - Backspace line merging
+- Delete line merging
 - Tab insertion
 - Multiline text editing
 - Horizontal cursor movement
@@ -60,7 +62,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 ### Core Editing
 
 | Feature                    | Status                      |
-|----------------------------|-----------------------------|
+|:---------------------------|:----------------------------|
 | Character insertion        | ████████████████████ `100%` |
 | Character deletion         | ████████████████████ `100%` |
 | Tab insertion              | ████████████████████ `100%` |
@@ -68,6 +70,8 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Horizontal cursor movement | ████████████████████ `100%` |
 | Vertical cursor movement   | ████████████████████ `100%` |
 | Backspace line merging     | ████████████████████ `100%` |
+| Delete character           | ████████████████████ `100%` |
+| Delete line merging        | ████████████████████ `100%` |
 | Line deletion              | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Word navigation            | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Home and End navigation    | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
