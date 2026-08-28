@@ -51,6 +51,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Horizontal cursor movement
 - Vertical cursor movement
 - Arrow key support
+- Home and End navigation
 - Delete key parsing
 - ANSI terminal rendering
 - Clean terminal restoration on exit
@@ -72,14 +73,14 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Backspace line merging     | ████████████████████ `100%` |
 | Delete character           | ████████████████████ `100%` |
 | Delete line merging        | ████████████████████ `100%` |
+| Home and End navigation    | ████████████████████ `100%` |
 | Line deletion              | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Word navigation            | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Home and End navigation    | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### Terminal
 
 | Feature                 | Status                      |
-|-------------------------|-----------------------------|
+|:------------------------|:----------------------------|
 | Raw keyboard input      | ████████████████████ `100%` |
 | ANSI terminal rendering | ████████████████████ `100%` |
 | Cursor positioning      | ████████████████████ `100%` |
@@ -91,7 +92,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 ### File Management
 
 | Feature                   | Status                    |
-|---------------------------|---------------------------|
+|:--------------------------|:--------------------------|
 | Open files                | ░░░░░░░░░░░░░░░░░░░░ `0%` |
 | Save files                | ░░░░░░░░░░░░░░░░░░░░ `0%` |
 | Create new files          | ░░░░░░░░░░░░░░░░░░░░ `0%` |
@@ -101,7 +102,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 ### Editor Features
 
 | Feature                  | Status                    |
-|--------------------------|---------------------------|
+|:-------------------------|:--------------------------|
 | Search                   | ░░░░░░░░░░░░░░░░░░░░ `0%` |
 | Replace                  | ░░░░░░░░░░░░░░░░░░░░ `0%` |
 | Copy and paste           | ░░░░░░░░░░░░░░░░░░░░ `0%` |
@@ -113,7 +114,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 ### Architecture
 
 | Feature                   | Status                      |
-|---------------------------|-----------------------------|
+|:--------------------------|:----------------------------|
 | Editor module             | ████████████████████ `100%` |
 | Input module              | ████████████████████ `100%` |
 | Terminal module           | ████████████████████ `100%` |
@@ -124,7 +125,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 ### Future
 
 | Feature                         | Status                    |
-|---------------------------------|---------------------------|
+|:--------------------------------|:--------------------------|
 | Syntax highlighting             | ░░░░░░░░░░░░░░░░░░░░ `0%` |
 | Configuration file              | ░░░░░░░░░░░░░░░░░░░░ `0%` |
 | Themes                          | ░░░░░░░░░░░░░░░░░░░░ `0%` |
