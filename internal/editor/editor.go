@@ -11,6 +11,7 @@ type Editor struct {
 	Lines []Line
 	Row int
 	Column int
+	DesiredColumn int
 }
 
 func (ed *Editor) Insert(value input.SimpleKey) {
@@ -18,6 +19,7 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 	copy(ed.Lines[ed.Row].Content[ed.Column+1:], ed.Lines[ed.Row].Content[ed.Column:])
 	ed.Lines[ed.Row].Content[ed.Column] = byte(value)
 	ed.Column++
+	ed.DesiredColumn = ed.Column
 }
 
 func (ed *Editor) Backspace() {
@@ -25,6 +27,7 @@ func (ed *Editor) Backspace() {
 		current := ed.Lines[ed.Row].Content
 		ed.Lines[ed.Row].Content = append(current[:ed.Column-1], current[ed.Column:]...)
 		ed.Column--
+		ed.DesiredColumn = ed.Column
 		return
 	}
 
@@ -33,6 +36,7 @@ func (ed *Editor) Backspace() {
 		current := ed.Lines[ed.Row].Content
 
 		ed.Column = len(previous)
+		ed.DesiredColumn = ed.Column
 		ed.Lines[ed.Row-1].Content = append(previous, current...)
 		ed.Lines = append(ed.Lines[:ed.Row], ed.Lines[ed.Row+1:]...)
 		ed.Row--
@@ -48,8 +52,8 @@ func (ed *Editor) Delete() {
 	}
 
 	if ed.Column == len(currentLine) && ed.Row < len(ed.Lines)-1 {
-		proximaLinha := ed.Lines[ed.Row+1].Content
-		ed.Lines[ed.Row].Content = append(currentLine, proximaLinha...)
+		nextLine := ed.Lines[ed.Row+1].Content
+		ed.Lines[ed.Row].Content = append(currentLine, nextLine...)
 		ed.Lines = append(ed.Lines[:ed.Row+1], ed.Lines[ed.Row+2:]...)
 	}
 }
@@ -77,27 +81,31 @@ func (ed *Editor) Enter() {
 
 	ed.Row++
 	ed.Column = 0
+	ed.DesiredColumn = ed.Column
 }
 
 func (ed *Editor) MoveUp() {
 	if ed.Row > 0 {
-		if len(ed.Lines[ed.Row-1].Content) < len(ed.Lines[ed.Row].Content) {
-			ed.Row--
-			ed.Column = len(ed.Lines[ed.Row].Content)
-		} else {
-			ed.Row--
-		}
+		ed.Row--
 
+		currentLineLength := len(ed.Lines[ed.Row].Content)
+		if currentLineLength < ed.DesiredColumn {
+			ed.Column = currentLineLength
+		} else {
+			ed.Column = ed.DesiredColumn
+		}
 	}
 }
 
 func (ed *Editor) MoveDown() {
-	if ed.Row < len(ed.Lines)-1 {
-		if len(ed.Lines[ed.Row+1].Content) < len(ed.Lines[ed.Row].Content) {
-			ed.Row++
-			ed.Column = len(ed.Lines[ed.Row].Content)
+	if ed.Row < len(ed.Lines) - 1 {
+		ed.Row++
+
+		currentLineLength := len(ed.Lines[ed.Row].Content)
+		if currentLineLength < ed.DesiredColumn {
+			ed.Column = currentLineLength
 		} else {
-			ed.Row++
+			ed.Column = ed.DesiredColumn
 		}
 	}
 }
@@ -107,27 +115,33 @@ func (ed *Editor) MoveLeft() {
 		if ed.Row > 0 {
 			ed.Row--
 			ed.Column = len(ed.Lines[ed.Row].Content)
+			ed.DesiredColumn = ed.Column
 		}
 	} else {
 		ed.Column--
+		ed.DesiredColumn = ed.Column
 	}
 }
 
 func (ed *Editor) MoveRight() {
 	if ed.Column < len(ed.Lines[ed.Row].Content) {
 		ed.Column++
+		ed.DesiredColumn = ed.Column
 	} else if ed.Row < len(ed.Lines)-1 {
 		ed.Row++
 		ed.Column = 0
+		ed.DesiredColumn = ed.Column
 	}
 }
 
 func (ed *Editor) Home() {
 	ed.Column = 0
+	ed.DesiredColumn = ed.Column
 }
 
 func (ed *Editor) End() {
 	ed.Column = len(ed.Lines[ed.Row].Content)
+	ed.DesiredColumn = ed.Column
 }
 
 func Render(ed *Editor) {
