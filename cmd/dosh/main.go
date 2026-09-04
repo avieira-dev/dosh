@@ -52,6 +52,8 @@ func main() {
 				ed.MoveWordRight()
 			case input.KeyBackspace:
 				ed.Backspace()
+			case input.KeyCtrlK:
+				ed.DeleteLineContent()
 			case input.KeyTab:
 				ed.Tab()
 			case input.KeyEnter:

@@ -111,6 +111,12 @@ func (ed *Editor) Delete() {
 	}
 }
 
+func (ed *Editor) DeleteLineContent() {
+	ed.Lines[ed.Row].Content = nil
+	ed.Column = 0
+	ed.DesiredColumn = ed.Column
+}
+
 func (ed *Editor) Tab() {
 	for i := 0; i < 4; i++ {
 		ed.Insert(input.SimpleKey(' '))

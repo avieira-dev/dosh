@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, cursor movement, word navigation, tab insertion, and multiline editing.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, and multiline editing.
 
 > [!NOTE]  
 > The project is under active development.
@@ -46,6 +46,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Character deletion with Delete
 - Backspace line merging
 - Delete line merging
+- Line content deletion with Ctrl + K
 - Tab insertion
 - Multiline text editing
 - Horizontal cursor movement
@@ -77,7 +78,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Delete line merging        | ████████████████████ `100%` |
 | Home and End navigation    | ████████████████████ `100%` |
 | Word navigation            | ████████████████████ `100%` |
-| Line deletion              | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Line content deletion      | ████████████████████ `100%` |
 
 ### Terminal
 

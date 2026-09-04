@@ -22,6 +22,7 @@ const (
 	KeyDelete
 	KeyEnter
 	KeyTab
+	KeyCtrlK
 
 	// Control
 	KeyEscape
