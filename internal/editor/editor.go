@@ -12,6 +12,7 @@ type Editor struct {
 	Row           int
 	Column        int
 	DesiredColumn int
+	ScrollRow     int
 }
 
 var wordDelimiters = []byte{
@@ -169,6 +170,20 @@ func (ed *Editor) MoveDown() {
 	}
 }
 
+func (ed *Editor) Scroll(size terminal.Size) {
+	// If the cursor moved above the currently visible area,
+	// move the viewport up so the cursor becomes visible.
+	if ed.Row < ed.ScrollRow {
+		ed.ScrollRow = ed.Row
+	}
+
+	// If the cursor moved below the currently visible area,
+	// move the viewport down so the cursor becomes the last visible line.
+	if ed.Row >= ed.ScrollRow+size.Height {
+		ed.ScrollRow = ed.Row - size.Height + 1
+	}
+}
+
 func (ed *Editor) MoveLeft() {
 	if ed.Column == 0 {
 		if ed.Row > 0 {
@@ -231,13 +246,23 @@ func (ed *Editor) End() {
 	ed.DesiredColumn = ed.Column
 }
 
-func Render(ed *Editor) {
+func Render(ed *Editor, size terminal.Size) {
 	terminal.ClearScreen()
 
-	for _, line := range ed.Lines {
-		fmt.Print(string(line.Content))
-		fmt.Print("\r\n")
+	linesToRender := len(ed.Lines) - ed.ScrollRow
+	if linesToRender > size.Height {
+		linesToRender = size.Height
 	}
 
-	fmt.Printf("\033[%d;%dH", ed.Row+1, ed.Column+1)
+	for i := 0; i < linesToRender; i++ {
+		line := ed.Lines[ed.ScrollRow+i]
+
+		fmt.Print(string(line.Content))
+
+		if i < linesToRender-1 {
+			fmt.Print("\r\n")
+		}
+	}
+
+	fmt.Printf("\033[%d;%dH", ed.Row-ed.ScrollRow+1, ed.Column+1)
 }

@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, and multiline editing.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, terminal resizing, and screen scrolling.
 
 > [!NOTE]  
 > The project is under active development.
@@ -58,6 +58,8 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Delete key parsing
 - ANSI terminal rendering
 - Clean terminal restoration on exit
+- Terminal resizing support
+- Vertical screen scrolling
 
 ---
 
@@ -88,8 +90,8 @@ Dosh currently provides basic text editing capabilities, including character ins
 | ANSI terminal rendering | ████████████████████ `100%` |
 | Cursor positioning      | ████████████████████ `100%` |
 | Terminal restoration    | ████████████████████ `100%` |
-| Terminal resizing       | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Screen scrolling        | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Terminal resizing       | ████████████████████ `100%` |
+| Screen scrolling        | ████████████████████ `100%` |
 | Status bar              | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### File Management
