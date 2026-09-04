@@ -9,8 +9,30 @@ const (
 )
 
 type Parser struct {
-	State ParserState
+	State  ParserState
 	Buffer []byte
+}
+
+var (
+	arrowRightSequence = []byte{27, '[', 'C'}
+	arrowLeftSequence  = []byte{27, '[', 'D'}
+	deleteSequence     = []byte{27, '[', '3', '~'}
+	ctrlRightSequence  = []byte{27, '[', '1', ';', '5', 'C'}
+	ctrlLeftSequence   = []byte{27, '[', '1', ';', '5', 'D'}
+)
+
+func matchesSequence(buffer []byte, sequence []byte) bool {
+	if len(buffer) != len(sequence) {
+		return false
+	}
+
+	for i, b := range buffer {
+		if b != sequence[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (parser *Parser) Parse(value byte) (Key, bool) {
@@ -33,7 +55,7 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 			return Key{Type: Simple, Value: SimpleKey(value)}, true
 		}
 	case StateEscape:
-		if value == 91 {
+		if value == '[' {
 			parser.Buffer = append(parser.Buffer, value)
 			parser.State = StateCSI
 			return Key{}, false
@@ -44,23 +66,33 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 		var specialKey SpecialKey
 
 		switch value {
-		case 65:
+		case 'A':
 			specialKey = KeyArrowUp
-		case 66:
+		case 'B':
 			specialKey = KeyArrowDown
-		case 67:
-			specialKey = KeyArrowRight
-		case 68:
-			specialKey = KeyArrowLeft
-		case 70:
+		case 'F':
 			specialKey = KeyEnd
-		case 72:
+		case 'H':
 			specialKey = KeyHome
-		case 126:
-			if len(parser.Buffer) == 4 {
-				if parser.Buffer[0] == 27 && parser.Buffer[1] == '[' && parser.Buffer[2] == '3' && parser.Buffer[3] == '~' {
-					specialKey = KeyDelete
-				}
+		case '~':
+			if matchesSequence(parser.Buffer, deleteSequence) {
+				specialKey = KeyDelete
+			}
+		case 'C':
+			if matchesSequence(parser.Buffer, arrowRightSequence) {
+				specialKey = KeyArrowRight
+			}
+
+			if matchesSequence(parser.Buffer, ctrlRightSequence) {
+				specialKey = KeyCtrlRight
+			}
+		case 'D':
+			if matchesSequence(parser.Buffer, arrowLeftSequence) {
+				specialKey = KeyArrowLeft
+			}
+
+			if matchesSequence(parser.Buffer, ctrlLeftSequence) {
+				specialKey = KeyCtrlLeft
 			}
 		}
 

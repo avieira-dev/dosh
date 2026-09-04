@@ -46,6 +46,10 @@ func main() {
 				ed.MoveRight()
 			case input.KeyCtrlC:
 				running = false
+			case input.KeyCtrlLeft:
+				ed.MoveWordLeft()
+			case input.KeyCtrlRight:
+				ed.MoveWordRight()
 			case input.KeyBackspace:
 				ed.Backspace()
 			case input.KeyTab:

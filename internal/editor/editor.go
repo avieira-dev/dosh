@@ -8,10 +8,63 @@ import (
 )
 
 type Editor struct {
-	Lines []Line
-	Row int
-	Column int
+	Lines         []Line
+	Row           int
+	Column        int
 	DesiredColumn int
+}
+
+var wordDelimiters = []byte{
+	'!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
+	':', ';', '<', '=', '>', '?', '@',
+	'[', '\\', ']', '^', '_', '`',
+	'{', '|', '}', '~',
+}
+
+func isWordDelimiter(value byte) bool {
+	for _, sb := range wordDelimiters {
+		if sb == value {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isSpace(value byte) bool {
+	return value == ' '
+}
+
+func moveToWordStart(line []byte, column int) int {
+	for column > 0 && isSpace(line[column-1]) {
+		column--
+	}
+
+	if column > 0 && isWordDelimiter(line[column-1]) {
+		return column - 1
+	}
+
+	for column > 0 && !isSpace(line[column-1]) && !isWordDelimiter(line[column-1]) {
+		column--
+	}
+
+	return column
+}
+
+func moveToWordEnd(line []byte, column int) int {
+	for column < len(line) && isSpace(line[column]) {
+		column++
+	}
+
+	if column < len(line) && isWordDelimiter(line[column]) {
+		return column + 1
+	}
+
+	for column < len(line) && !isSpace(line[column]) && !isWordDelimiter(line[column]) {
+		column++
+	}
+
+	return column
 }
 
 func (ed *Editor) Insert(value input.SimpleKey) {
@@ -98,7 +151,7 @@ func (ed *Editor) MoveUp() {
 }
 
 func (ed *Editor) MoveDown() {
-	if ed.Row < len(ed.Lines) - 1 {
+	if ed.Row < len(ed.Lines)-1 {
 		ed.Row++
 
 		currentLineLength := len(ed.Lines[ed.Row].Content)
@@ -132,6 +185,34 @@ func (ed *Editor) MoveRight() {
 		ed.Column = 0
 		ed.DesiredColumn = ed.Column
 	}
+}
+
+func (ed *Editor) MoveWordLeft() {
+	if ed.Column == 0 {
+		if ed.Row == 0 {
+			return
+		}
+
+		ed.Row--
+		ed.Column = len(ed.Lines[ed.Row].Content)
+	}
+
+	ed.Column = moveToWordStart(ed.Lines[ed.Row].Content, ed.Column)
+	ed.DesiredColumn = ed.Column
+}
+
+func (ed *Editor) MoveWordRight() {
+	if ed.Column >= len(ed.Lines[ed.Row].Content) {
+		if ed.Row >= len(ed.Lines)-1 {
+			return
+		}
+
+		ed.Row++
+		ed.Column = 0
+	}
+
+	ed.Column = moveToWordEnd(ed.Lines[ed.Row].Content, ed.Column)
+	ed.DesiredColumn = ed.Column
 }
 
 func (ed *Editor) Home() {
