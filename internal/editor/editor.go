@@ -171,15 +171,17 @@ func (ed *Editor) MoveDown() {
 }
 
 func (ed *Editor) Scroll(size terminal.Size) {
+	editorHeight := size.Height - 1
+
 	if ed.Row < ed.ScrollRow {
 		ed.ScrollRow = ed.Row
 	}
 
-	if ed.Row >= ed.ScrollRow+size.Height {
-		ed.ScrollRow = ed.Row - size.Height + 1
+	if ed.Row >= ed.ScrollRow+editorHeight {
+		ed.ScrollRow = ed.Row - editorHeight + 1
 	}
 
-	maxScrollRow := len(ed.Lines) - size.Height
+	maxScrollRow := len(ed.Lines) - editorHeight
 
 	if maxScrollRow < 0 {
 		maxScrollRow = 0
@@ -255,9 +257,11 @@ func (ed *Editor) End() {
 func Render(ed *Editor, size terminal.Size) {
 	terminal.ClearScreen()
 
+	editorHeight := size.Height - 1
+
 	linesToRender := len(ed.Lines) - ed.ScrollRow
-	if linesToRender > size.Height {
-		linesToRender = size.Height
+	if linesToRender > editorHeight {
+		linesToRender = editorHeight
 	}
 
 	for i := 0; i < linesToRender; i++ {
@@ -270,5 +274,13 @@ func Render(ed *Editor, size terminal.Size) {
 		}
 	}
 
+	// Position the cursor inside the editor
+	fmt.Printf("\033[%d;%dH", ed.Row-ed.ScrollRow+1, ed.Column+1)
+
+	// Render the status bar
+	fmt.Printf("\033[%d;1H", size.Height)
+	fmt.Printf("Line %d, Column %d", ed.Row+1, ed.Column+1)
+
+	// Return the cursor to its position inside the editor
 	fmt.Printf("\033[%d;%dH", ed.Row-ed.ScrollRow+1, ed.Column+1)
 }

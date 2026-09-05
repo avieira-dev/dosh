@@ -34,6 +34,9 @@ func main() {
 		return
 	}
 
+	ed.Scroll(size)
+	editor.Render(&ed, size)
+
 	keys := make(chan input.Key)
 
 	go func() {
@@ -104,7 +107,5 @@ func main() {
 
 	}
 
-	fmt.Printf("\033[%d;1H", len(ed.Lines)+1)
-	fmt.Print("Dosh successfully closed!")
-	fmt.Print("\r\n")
+	terminal.ClearScreen()
 }
