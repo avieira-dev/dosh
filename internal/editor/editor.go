@@ -171,16 +171,22 @@ func (ed *Editor) MoveDown() {
 }
 
 func (ed *Editor) Scroll(size terminal.Size) {
-	// If the cursor moved above the currently visible area,
-	// move the viewport up so the cursor becomes visible.
 	if ed.Row < ed.ScrollRow {
 		ed.ScrollRow = ed.Row
 	}
 
-	// If the cursor moved below the currently visible area,
-	// move the viewport down so the cursor becomes the last visible line.
 	if ed.Row >= ed.ScrollRow+size.Height {
 		ed.ScrollRow = ed.Row - size.Height + 1
+	}
+
+	maxScrollRow := len(ed.Lines) - size.Height
+
+	if maxScrollRow < 0 {
+		maxScrollRow = 0
+	}
+
+	if ed.ScrollRow > maxScrollRow {
+		ed.ScrollRow = maxScrollRow
 	}
 }
 
