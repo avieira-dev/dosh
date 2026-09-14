@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, terminal resizing, screen scrolling, and a status bar.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, and a status bar.
 
 > [!NOTE]  
 > The project is under active development.
@@ -29,9 +29,17 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 - [Features](#features)
 - [Roadmap](#roadmap)
+    - [Core Editing](#core-editing)
+    - [Terminal](#terminal)
+    - [File Management](#file-management)
+    - [Editor Features](#editor-features)
+    - [Architecture](#architecture)
+    - [Future](#future)
 - [Project Structure](#project-structure)
 - [Requirements](#requirements)
 - [Running](#running)
+    - [Clone the repository](#clone-the-repository)
+    - [Run](#run)
 - [Author](#author)
 - [License](#license)
 
@@ -41,6 +49,9 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 - Terminal-based text editing
 - Raw keyboard input
+- Unicode text support
+- Grapheme cluster-aware cursor movement
+- Grapheme cluster-aware character deletion
 - Character insertion
 - Character deletion with Backspace
 - Character deletion with Delete
@@ -82,6 +93,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Home and End navigation    | ████████████████████ `100%` |
 | Word navigation            | ████████████████████ `100%` |
 | Line content deletion      | ████████████████████ `100%` |
+| Unicode text support       | ████████████████████ `100%` |
 
 ### Terminal
 
@@ -150,6 +162,7 @@ dosh/
 ├── internal/
 │   ├── editor/
 │   │   ├── editor.go
+│   │   ├── grapheme.go
 │   │   └── line.go
 │   ├── input/
 │   │   ├── input.go
