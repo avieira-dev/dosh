@@ -61,3 +61,7 @@ func normalizeGraphemeColumn(line []rune, column int) int {
 
 	return column
 }
+
+func displayWidth(line []rune) int {
+	return uniseg.StringWidth(string(line))
+}

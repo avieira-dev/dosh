@@ -21,4 +21,12 @@ const (
 	BgMagenta = "\033[45m"
 	BgCyan    = "\033[46m"
 	BgWhite   = "\033[47m"
+
+	RuleFg         = "\033[38;5;238m"
+	GutterFg       = "\033[38;5;240m"
+	GutterActiveFg = "\033[38;5;252m"
+	TitleFg        = "\033[38;5;255m"
+	StatusFg       = "\033[38;5;244m"
+	StatusKeyFg    = "\033[38;5;250m"
+	CurrentLineBg  = "\033[48;5;235m"
 )

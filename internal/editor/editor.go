@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"unicode"
 
@@ -206,7 +207,7 @@ func (ed *Editor) MoveDown() {
 }
 
 func (ed *Editor) Scroll(size terminal.Size) {
-	editorHeight := size.Height - 2
+	editorHeight := size.Height - 3
 
 	if ed.Row < ed.ScrollRow {
 		ed.ScrollRow = ed.Row
@@ -301,54 +302,148 @@ func (ed *Editor) End() {
 	ed.DesiredColumn = ed.Column
 }
 
-func Render(ed *Editor, size terminal.Size) {
-	terminal.ClearScreen()
+func gutterWidth(lineCount int) int {
+	digits := len(fmt.Sprintf("%d", lineCount))
 
-	header := " DOSH v0.1.0"
-	padding := size.Width - len(header)
-
-	if padding < 0 {
-		padding = 0
+	if digits < 3 {
+		digits = 3
 	}
 
-	fmt.Print(terminal.BgWhite + terminal.Blue)
-	fmt.Print(header)
-	fmt.Print(strings.Repeat(" ", padding))
-	fmt.Print(terminal.Reset + "\r\n")
+	return digits + 2
+}
 
-	editorHeight := size.Height - 2
+func Render(ed *Editor, size terminal.Size, fileName string) {
+	var buf strings.Builder
 
-	linesToRender := len(ed.Lines) - ed.ScrollRow
-	if linesToRender > editorHeight {
-		linesToRender = editorHeight
+	buf.WriteString(terminal.HideCursor)
+	buf.WriteString(terminal.MoveCursorSeq(1, 1))
+
+	title := " DOSH v0.1.0 "
+	titleLen := len(title)
+	leftRule := 2
+
+	buf.WriteString(terminal.RuleFg)
+	buf.WriteString(strings.Repeat("─", leftRule))
+	buf.WriteString(terminal.Reset)
+	buf.WriteString(terminal.TitleFg)
+	buf.WriteString(title)
+	buf.WriteString(terminal.Reset)
+	buf.WriteString(terminal.RuleFg)
+
+	rightRule := size.Width - leftRule - titleLen
+	if rightRule < 0 {
+		rightRule = 0
 	}
 
-	for i := 0; i < linesToRender; i++ {
+	buf.WriteString(strings.Repeat("─", rightRule))
+	buf.WriteString(terminal.Reset)
+
+	editorHeight := size.Height - 3
+	gw := gutterWidth(len(ed.Lines))
+
+	for i := 0; i < editorHeight; i++ {
+		buf.WriteString(terminal.MoveCursorSeq(i+2, 1))
+		buf.WriteString(terminal.ClearLineSeq())
+
 		lineIndex := ed.ScrollRow + i
-		line := ed.Lines[lineIndex]
+		if lineIndex >= len(ed.Lines) {
+			continue
+		}
 
-		if lineIndex == ed.Row {
-			fmt.Print(string(line.Content[:ed.Column]))
-			fmt.Print("\0337")
-			fmt.Print(string(line.Content[ed.Column:]))
+		isCurrent := lineIndex == ed.Row
+		lineNumberField := fmt.Sprintf("%*d", gw-2, lineIndex+1)
+
+		if isCurrent {
+			buf.WriteString(terminal.CurrentLineBg)
+			buf.WriteString(terminal.GutterActiveFg)
+			buf.WriteString(" " + lineNumberField + " ")
 		} else {
-			fmt.Print(string(line.Content))
+			buf.WriteString(terminal.GutterFg)
+			buf.WriteString(" " + lineNumberField + " ")
 		}
 
-		if i < linesToRender-1 {
-			fmt.Print("\r\n")
+		buf.WriteString(terminal.Reset)
+
+		if isCurrent {
+			buf.WriteString(terminal.CurrentLineBg)
 		}
+
+		line := ed.Lines[lineIndex]
+		buf.WriteString(string(line.Content))
+
+		if isCurrent {
+			padding := size.Width - gw - displayWidth(line.Content)
+
+			if padding > 0 {
+				buf.WriteString(strings.Repeat(" ", padding))
+			}
+		}
+
+		buf.WriteString(terminal.Reset)
 	}
 
-	fmt.Printf("\033[%d;1H", size.Height)
-	fmt.Printf("Line %d, Column %d	", ed.Row+1, ed.Column+1)
+	buf.WriteString(terminal.MoveCursorSeq(size.Height-1, 1))
+	buf.WriteString(terminal.RuleFg)
+	buf.WriteString(strings.Repeat("─", size.Width))
+	buf.WriteString(terminal.Reset)
+
+	buf.WriteString(terminal.MoveCursorSeq(size.Height, 1))
+	buf.WriteString(terminal.ClearLineSeq())
+
+	if fileName != "" {
+		buf.WriteString(terminal.TitleFg)
+		buf.WriteString(fileName)
+		buf.WriteString(terminal.Reset)
+		buf.WriteString(terminal.StatusFg)
+		buf.WriteString("  ·  ")
+	} else {
+		buf.WriteString(terminal.StatusFg)
+	}
+
+	fmt.Fprintf(&buf, "Ln %d, Col %d", ed.Row+1, ed.Column+1)
+	buf.WriteString(terminal.Reset)
 
 	if ed.StatusMessage != "" {
-		fmt.Print(ed.StatusMessage)
+		buf.WriteString("   ")
+		buf.WriteString(terminal.StatusFg)
+		buf.WriteString(ed.StatusMessage)
+		buf.WriteString(terminal.Reset)
 	} else {
-		fmt.Print(terminal.BgWhite + terminal.Blue + " ^S " + terminal.Reset + " Save  ")
-		fmt.Print(terminal.BgWhite + terminal.Blue + " ^C " + terminal.Reset + " Quit")
+		shortcuts := []struct {
+			key, label string
+		}{
+			{"^S", "Save"},
+			{"^C", "Quit"},
+			{"^K", "Del Line"},
+			{"^←/^→", "Word"},
+		}
+
+		buf.WriteString("        ")
+
+		for i, s := range shortcuts {
+			buf.WriteString(terminal.StatusKeyFg)
+			buf.WriteString(s.key)
+			buf.WriteString(terminal.Reset)
+			buf.WriteString(terminal.StatusFg)
+			buf.WriteString(" " + s.label)
+			buf.WriteString(terminal.Reset)
+
+			if i < len(shortcuts)-1 {
+				buf.WriteString("  ")
+			}
+		}
 	}
 
-	fmt.Print("\0338")
+	cursorColumn := displayWidth(ed.Lines[ed.Row].Content[:ed.Column])
+
+	buf.WriteString(
+		terminal.MoveCursorSeq(
+			ed.Row-ed.ScrollRow+2,
+			cursorColumn+gw+1,
+		),
+	)
+
+	buf.WriteString(terminal.ShowCursor)
+
+	os.Stdout.WriteString(buf.String())
 }

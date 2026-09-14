@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -14,6 +15,14 @@ import (
 	"github.com/avieira-dev/dosh/internal/input"
 	"github.com/avieira-dev/dosh/internal/terminal"
 )
+
+func fileDisplayName(openFile *file.File) string {
+	if openFile == nil {
+		return ""
+	}
+
+	return filepath.Base(openFile.Path)
+}
 
 func main() {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
@@ -60,8 +69,9 @@ func main() {
 		return
 	}
 
+	terminal.ClearScreen()
 	ed.Scroll(size)
-	editor.Render(&ed, size)
+	editor.Render(&ed, size, fileDisplayName(openFile))
 
 	keys := make(chan input.Key)
 
@@ -99,7 +109,7 @@ func main() {
 
 				if running {
 					ed.Scroll(size)
-					editor.Render(&ed, size)
+					editor.Render(&ed, size, fileDisplayName(openFile))
 				}
 
 				continue
@@ -130,7 +140,7 @@ func main() {
 					}
 				}
 
-				editor.Render(&ed, size)
+				editor.Render(&ed, size, fileDisplayName(openFile))
 				continue
 			}
 
@@ -178,7 +188,7 @@ func main() {
 					}
 				}
 
-				editor.Render(&ed, size)
+				editor.Render(&ed, size, fileDisplayName(openFile))
 
 				continue
 			}
@@ -241,7 +251,7 @@ func main() {
 
 			if running {
 				ed.Scroll(size)
-				editor.Render(&ed, size)
+				editor.Render(&ed, size, fileDisplayName(openFile))
 			}
 
 		case <-signals:
@@ -252,13 +262,14 @@ func main() {
 				continue
 			}
 
+			terminal.ClearScreen()
 			ed.Scroll(size)
-			editor.Render(&ed, size)
+			editor.Render(&ed, size, fileDisplayName(openFile))
 
 		case <-statusTimer.C:
 			ed.StatusMessage = ""
 			ed.Scroll(size)
-			editor.Render(&ed, size)
+			editor.Render(&ed, size, fileDisplayName(openFile))
 		}
 	}
 

@@ -11,10 +11,23 @@ type Size struct {
 	Height int
 }
 
+const (
+	HideCursor = "\033[?25l"
+	ShowCursor = "\033[?25h"
+)
+
 func ClearScreen() {
 	fmt.Print("\033[2J")
 	fmt.Print("\033[H")
 	fmt.Print("\033[3J")
+}
+
+func MoveCursorSeq(row, column int) string {
+	return fmt.Sprintf("\033[%d;%dH", row, column)
+}
+
+func ClearLineSeq() string {
+	return "\033[2K"
 }
 
 func GetSize() (Size, error) {
