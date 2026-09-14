@@ -1,5 +1,9 @@
 package input
 
+import (
+	"unicode/utf8"
+)
+
 type ParserState int
 
 const (
@@ -9,8 +13,9 @@ const (
 )
 
 type Parser struct {
-	State  ParserState
-	Buffer []byte
+	State     ParserState
+	Buffer    []byte
+	UTFBuffer []byte
 }
 
 var (
@@ -35,6 +40,25 @@ func matchesSequence(buffer []byte, sequence []byte) bool {
 	return true
 }
 
+func (parser *Parser) parseUTF8(value byte) (Key, bool) {
+	parser.UTFBuffer = append(parser.UTFBuffer, value)
+
+	if !utf8.FullRune(parser.UTFBuffer) {
+		return Key{}, false
+	}
+
+	r, size := utf8.DecodeRune(parser.UTFBuffer)
+
+	if r == utf8.RuneError && size == 1 {
+		parser.UTFBuffer = parser.UTFBuffer[:0]
+		return Key{}, false
+	}
+
+	parser.UTFBuffer = parser.UTFBuffer[:0]
+
+	return Key{Type: Simple, Value: SimpleKey(r)}, true
+}
+
 func (parser *Parser) Parse(value byte) (Key, bool) {
 	switch parser.State {
 	case StateNormal:
@@ -44,7 +68,7 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 		case 9:
 			return Key{Type: Special, Value: KeyTab}, true
 		case 11:
-			return Key{Type: Simple, Value: KeyCtrlK}, true
+			return Key{Type: Special, Value: KeyCtrlK}, true
 		case 13:
 			return Key{Type: Special, Value: KeyEnter}, true
 		case 127:
@@ -54,7 +78,7 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 			parser.State = StateEscape
 			return Key{}, false
 		default:
-			return Key{Type: Simple, Value: SimpleKey(value)}, true
+			return parser.parseUTF8(value)
 		}
 	case StateEscape:
 		if value == '[' {

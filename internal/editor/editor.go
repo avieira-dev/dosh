@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"unicode"
 
 	"github.com/avieira-dev/dosh/internal/input"
 	"github.com/avieira-dev/dosh/internal/terminal"
@@ -15,14 +16,14 @@ type Editor struct {
 	ScrollRow     int
 }
 
-var wordDelimiters = []byte{
+var wordDelimiters = []rune{
 	'!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
 	':', ';', '<', '=', '>', '?', '@',
 	'[', '\\', ']', '^', '_', '`',
 	'{', '|', '}', '~',
 }
 
-func isWordDelimiter(value byte) bool {
+func isWordDelimiter(value rune) bool {
 	for _, sb := range wordDelimiters {
 		if sb == value {
 			return true
@@ -32,11 +33,11 @@ func isWordDelimiter(value byte) bool {
 	return false
 }
 
-func isSpace(value byte) bool {
-	return value == ' '
+func isSpace(value rune) bool {
+	return unicode.IsSpace(value)
 }
 
-func moveToWordStart(line []byte, column int) int {
+func moveToWordStart(line []rune, column int) int {
 	for column > 0 && isSpace(line[column-1]) {
 		column--
 	}
@@ -52,7 +53,7 @@ func moveToWordStart(line []byte, column int) int {
 	return column
 }
 
-func moveToWordEnd(line []byte, column int) int {
+func moveToWordEnd(line []rune, column int) int {
 	for column < len(line) && isSpace(line[column]) {
 		column++
 	}
@@ -71,7 +72,7 @@ func moveToWordEnd(line []byte, column int) int {
 func (ed *Editor) Insert(value input.SimpleKey) {
 	ed.Lines[ed.Row].Content = append(ed.Lines[ed.Row].Content, 0)
 	copy(ed.Lines[ed.Row].Content[ed.Column+1:], ed.Lines[ed.Row].Content[ed.Column:])
-	ed.Lines[ed.Row].Content[ed.Column] = byte(value)
+	ed.Lines[ed.Row].Content[ed.Column] = rune(value)
 	ed.Column++
 	ed.DesiredColumn = ed.Column
 }
@@ -79,8 +80,10 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 func (ed *Editor) Backspace() {
 	if ed.Column > 0 {
 		current := ed.Lines[ed.Row].Content
-		ed.Lines[ed.Row].Content = append(current[:ed.Column-1], current[ed.Column:]...)
-		ed.Column--
+		start := previousGraphemeStart(current, ed.Column)
+
+		ed.Lines[ed.Row].Content = append(current[:start], current[ed.Column:]...)
+		ed.Column = start
 		ed.DesiredColumn = ed.Column
 		return
 	}
@@ -101,7 +104,13 @@ func (ed *Editor) Delete() {
 	currentLine := ed.Lines[ed.Row].Content
 
 	if ed.Column < len(currentLine) {
-		ed.Lines[ed.Row].Content = append(currentLine[:ed.Column], currentLine[ed.Column+1:]...)
+		end := nextGraphemeEnd(currentLine, ed.Column)
+
+		ed.Lines[ed.Row].Content = append(
+			currentLine[:ed.Column],
+			currentLine[end:]...,
+		)
+
 		return
 	}
 
@@ -149,11 +158,17 @@ func (ed *Editor) MoveUp() {
 		ed.Row--
 
 		currentLineLength := len(ed.Lines[ed.Row].Content)
+
 		if currentLineLength < ed.DesiredColumn {
 			ed.Column = currentLineLength
 		} else {
 			ed.Column = ed.DesiredColumn
 		}
+
+		ed.Column = normalizeGraphemeColumn(
+			ed.Lines[ed.Row].Content,
+			ed.Column,
+		)
 	}
 }
 
@@ -162,11 +177,17 @@ func (ed *Editor) MoveDown() {
 		ed.Row++
 
 		currentLineLength := len(ed.Lines[ed.Row].Content)
+
 		if currentLineLength < ed.DesiredColumn {
 			ed.Column = currentLineLength
 		} else {
 			ed.Column = ed.DesiredColumn
 		}
+
+		ed.Column = normalizeGraphemeColumn(
+			ed.Lines[ed.Row].Content,
+			ed.Column,
+		)
 	}
 }
 
@@ -200,14 +221,14 @@ func (ed *Editor) MoveLeft() {
 			ed.DesiredColumn = ed.Column
 		}
 	} else {
-		ed.Column--
+		ed.Column = previousGraphemeStart(ed.Lines[ed.Row].Content, ed.Column)
 		ed.DesiredColumn = ed.Column
 	}
 }
 
 func (ed *Editor) MoveRight() {
 	if ed.Column < len(ed.Lines[ed.Row].Content) {
-		ed.Column++
+		ed.Column = nextGraphemeEnd(ed.Lines[ed.Row].Content, ed.Column)
 		ed.DesiredColumn = ed.Column
 	} else if ed.Row < len(ed.Lines)-1 {
 		ed.Row++
@@ -227,6 +248,12 @@ func (ed *Editor) MoveWordLeft() {
 	}
 
 	ed.Column = moveToWordStart(ed.Lines[ed.Row].Content, ed.Column)
+
+	ed.Column = normalizeGraphemeColumn(
+		ed.Lines[ed.Row].Content,
+		ed.Column,
+	)
+
 	ed.DesiredColumn = ed.Column
 }
 
@@ -241,6 +268,12 @@ func (ed *Editor) MoveWordRight() {
 	}
 
 	ed.Column = moveToWordEnd(ed.Lines[ed.Row].Content, ed.Column)
+
+	ed.Column = normalizeGraphemeColumn(
+		ed.Lines[ed.Row].Content,
+		ed.Column,
+	)
+
 	ed.DesiredColumn = ed.Column
 }
 
@@ -265,22 +298,24 @@ func Render(ed *Editor, size terminal.Size) {
 	}
 
 	for i := 0; i < linesToRender; i++ {
-		line := ed.Lines[ed.ScrollRow+i]
+		lineIndex := ed.ScrollRow + i
+		line := ed.Lines[lineIndex]
 
-		fmt.Print(string(line.Content))
+		if lineIndex == ed.Row {
+			fmt.Print(string(line.Content[:ed.Column]))
+			fmt.Print("\0337")
+			fmt.Print(string(line.Content[ed.Column:]))
+		} else {
+			fmt.Print(string(line.Content))
+		}
 
 		if i < linesToRender-1 {
 			fmt.Print("\r\n")
 		}
 	}
 
-	// Position the cursor inside the editor
-	fmt.Printf("\033[%d;%dH", ed.Row-ed.ScrollRow+1, ed.Column+1)
-
-	// Render the status bar
 	fmt.Printf("\033[%d;1H", size.Height)
 	fmt.Printf("Line %d, Column %d", ed.Row+1, ed.Column+1)
 
-	// Return the cursor to its position inside the editor
-	fmt.Printf("\033[%d;%dH", ed.Row-ed.ScrollRow+1, ed.Column+1)
+	fmt.Print("\0338")
 }

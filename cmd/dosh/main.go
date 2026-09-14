@@ -24,7 +24,7 @@ func main() {
 
 	ed := editor.Editor{
 		Lines: []editor.Line{
-			{Content: []byte{}},
+			{Content: []rune{}},
 		},
 	}
 
