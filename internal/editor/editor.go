@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"strings"
 	"unicode"
 
 	"github.com/avieira-dev/dosh/internal/input"
@@ -15,6 +16,7 @@ type Editor struct {
 	DesiredColumn int
 	ScrollRow     int
 	StatusMessage string
+	Dirty         bool
 }
 
 var wordDelimiters = []rune{
@@ -25,8 +27,8 @@ var wordDelimiters = []rune{
 }
 
 func isWordDelimiter(value rune) bool {
-	for _, sb := range wordDelimiters {
-		if sb == value {
+	for _, delimiter := range wordDelimiters {
+		if delimiter == value {
 			return true
 		}
 	}
@@ -76,6 +78,7 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 	ed.Lines[ed.Row].Content[ed.Column] = rune(value)
 	ed.Column++
 	ed.DesiredColumn = ed.Column
+	ed.Dirty = true
 }
 
 func (ed *Editor) Backspace() {
@@ -86,6 +89,7 @@ func (ed *Editor) Backspace() {
 		ed.Lines[ed.Row].Content = append(current[:start], current[ed.Column:]...)
 		ed.Column = start
 		ed.DesiredColumn = ed.Column
+		ed.Dirty = true
 		return
 	}
 
@@ -98,6 +102,7 @@ func (ed *Editor) Backspace() {
 		ed.Lines[ed.Row-1].Content = append(previous, current...)
 		ed.Lines = append(ed.Lines[:ed.Row], ed.Lines[ed.Row+1:]...)
 		ed.Row--
+		ed.Dirty = true
 	}
 }
 
@@ -112,6 +117,8 @@ func (ed *Editor) Delete() {
 			currentLine[end:]...,
 		)
 
+		ed.Dirty = true
+
 		return
 	}
 
@@ -119,11 +126,16 @@ func (ed *Editor) Delete() {
 		nextLine := ed.Lines[ed.Row+1].Content
 		ed.Lines[ed.Row].Content = append(currentLine, nextLine...)
 		ed.Lines = append(ed.Lines[:ed.Row+1], ed.Lines[ed.Row+2:]...)
+		ed.Dirty = true
 	}
 }
 
 func (ed *Editor) DeleteLineContent() {
-	ed.Lines[ed.Row].Content = nil
+	if len(ed.Lines[ed.Row].Content) > 0 {
+		ed.Lines[ed.Row].Content = nil
+		ed.Dirty = true
+	}
+
 	ed.Column = 0
 	ed.DesiredColumn = ed.Column
 }
@@ -152,6 +164,7 @@ func (ed *Editor) Enter() {
 	ed.Row++
 	ed.Column = 0
 	ed.DesiredColumn = ed.Column
+	ed.Dirty = true
 }
 
 func (ed *Editor) MoveUp() {
@@ -193,7 +206,7 @@ func (ed *Editor) MoveDown() {
 }
 
 func (ed *Editor) Scroll(size terminal.Size) {
-	editorHeight := size.Height - 1
+	editorHeight := size.Height - 2
 
 	if ed.Row < ed.ScrollRow {
 		ed.ScrollRow = ed.Row
@@ -291,7 +304,19 @@ func (ed *Editor) End() {
 func Render(ed *Editor, size terminal.Size) {
 	terminal.ClearScreen()
 
-	editorHeight := size.Height - 1
+	header := " DOSH v0.1.0"
+	padding := size.Width - len(header)
+
+	if padding < 0 {
+		padding = 0
+	}
+
+	fmt.Print(terminal.BgWhite + terminal.Blue)
+	fmt.Print(header)
+	fmt.Print(strings.Repeat(" ", padding))
+	fmt.Print(terminal.Reset + "\r\n")
+
+	editorHeight := size.Height - 2
 
 	linesToRender := len(ed.Lines) - ed.ScrollRow
 	if linesToRender > editorHeight {
@@ -321,7 +346,8 @@ func Render(ed *Editor, size terminal.Size) {
 	if ed.StatusMessage != "" {
 		fmt.Print(ed.StatusMessage)
 	} else {
-		fmt.Print(terminal.BgBlue + terminal.White + " ^S " + terminal.Reset + " Save")
+		fmt.Print(terminal.BgWhite + terminal.Blue + " ^S " + terminal.Reset + " Save  ")
+		fmt.Print(terminal.BgWhite + terminal.Blue + " ^C " + terminal.Reset + " Quit")
 	}
 
 	fmt.Print("\0338")

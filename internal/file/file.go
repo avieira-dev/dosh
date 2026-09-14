@@ -1,6 +1,7 @@
 package file
 
 import (
+	"errors"
 	"os"
 	"strings"
 
@@ -12,8 +13,24 @@ type File struct {
 	Path  string
 }
 
+func Exists(path string) bool {
+	_, err := os.Stat(path)
+
+	return err == nil
+}
+
 func Open(path string) (File, error) {
 	data, err := os.ReadFile(path)
+
+	if errors.Is(err, os.ErrNotExist) {
+		return File{
+			Lines: []editor.Line{
+				{Content: []rune{}},
+			},
+			Path: path,
+		}, nil
+	}
+
 	if err != nil {
 		return File{}, err
 	}

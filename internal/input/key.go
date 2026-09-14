@@ -7,7 +7,6 @@ type KeyType int
 const (
 	KeyUnknown SpecialKey = iota
 
-	// Navigation
 	KeyArrowUp
 	KeyArrowDown
 	KeyArrowLeft
@@ -17,7 +16,6 @@ const (
 	KeyCtrlLeft
 	KeyCtrlRight
 
-	// Editing
 	KeyBackspace
 	KeyDelete
 	KeyEnter
@@ -25,7 +23,6 @@ const (
 	KeyCtrlK
 	KeyCtrlS
 
-	// Control
 	KeyEscape
 	KeyCtrlC
 )

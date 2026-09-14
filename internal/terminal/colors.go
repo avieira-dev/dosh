@@ -2,8 +2,8 @@ package terminal
 
 const (
 	Reset = "\033[0m"
+	Bold  = "\033[1m"
 
-	// Foreground
 	Black   = "\033[30m"
 	Red     = "\033[31m"
 	Green   = "\033[32m"
@@ -13,7 +13,6 @@ const (
 	Cyan    = "\033[36m"
 	White   = "\033[37m"
 
-	// Background
 	BgBlack   = "\033[40m"
 	BgRed     = "\033[41m"
 	BgGreen   = "\033[42m"

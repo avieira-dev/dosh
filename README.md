@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, and save status feedback.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, and exit confirmation.
 
 > [!IMPORTANT]  
 > Dosh is under active development and may be unstable or contain bugs. Features are still being implemented and tested, so it is not recommended for editing important files yet.
@@ -27,6 +27,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 ## Table of Contents
 
+- [Showcase](#showcase)
 - [Features](#features)
 - [Roadmap](#roadmap)
     - [Core Editing](#core-editing)
@@ -43,6 +44,15 @@ Dosh currently provides basic text editing capabilities, including character ins
     - [Test](#test)
 - [Author](#author)
 - [License](#license)
+
+---
+
+## Showcase
+
+<p align="center">
+    <em>Dosh running in the terminal</em><br>
+    <img src="./assets/screenshots/screenshot-dosh01.png" alt="Dosh terminal text editor displaying Hello, World!" width="100%"/>
+</p>
 
 ---
 
@@ -75,6 +85,10 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Status bar with cursor position
 - File opening
 - File saving with Ctrl + S
+- New file creation
+- Unsaved changes detection
+- Overwrite confirmation
+- Exit confirmation with unsaved changes
 - Save status feedback
 - ANSI terminal colors
 
@@ -118,9 +132,9 @@ Dosh currently provides basic text editing capabilities, including character ins
 |:--------------------------|:----------------------------|
 | Open files                | ████████████████████ `100%` |
 | Save files                | ████████████████████ `100%` |
-| Create new files          | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Create new files          | ████████████████████ `100%` |
+| Unsaved changes detection | ████████████████████ `100%` |
 | Save As                   | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Unsaved changes detection | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### Editor Features
 

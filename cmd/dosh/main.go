@@ -25,7 +25,7 @@ func main() {
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	if len(os.Args) > 2 {
-		fmt.Println("[ERROR] The number of arguments passed is invalid!")
+		fmt.Println("[ERROR] Invalid number of arguments!")
 		return
 	}
 
@@ -77,10 +77,112 @@ func main() {
 	statusTimer := time.NewTimer(time.Hour)
 	statusTimer.Stop()
 
+	inputFileName := false
+	fileName := ""
+	confirmExit := false
+	confirmOverwrite := false
+
 	running := true
 	for running {
 		select {
 		case key := <-keys:
+			if confirmExit {
+				if value, ok := key.Value.(input.SimpleKey); ok {
+					switch value {
+					case 'y', 'Y':
+						running = false
+					case 'n', 'N':
+						confirmExit = false
+						ed.StatusMessage = ""
+					}
+				}
+
+				if running {
+					ed.Scroll(size)
+					editor.Render(&ed, size)
+				}
+
+				continue
+			}
+
+			if confirmOverwrite {
+				if value, ok := key.Value.(input.SimpleKey); ok {
+					switch value {
+					case 'y', 'Y':
+						newFile := file.File{
+							Path: fileName,
+						}
+
+						if err := newFile.Save(ed.Lines); err != nil {
+							ed.StatusMessage = "Error saving!"
+						} else {
+							openFile = &newFile
+							ed.Dirty = false
+							ed.StatusMessage = "Saved successfully!"
+							statusTimer.Reset(2 * time.Second)
+						}
+
+						confirmOverwrite = false
+
+					case 'n', 'N':
+						confirmOverwrite = false
+						ed.StatusMessage = ""
+					}
+				}
+
+				editor.Render(&ed, size)
+				continue
+			}
+
+			if inputFileName {
+				if value, ok := key.Value.(input.SimpleKey); ok {
+					fileName += string(value)
+					ed.StatusMessage = "File name: " + fileName
+				}
+
+				if value, ok := key.Value.(input.SpecialKey); ok {
+					switch value {
+					case input.KeyBackspace:
+						if len(fileName) > 0 {
+							fileName = fileName[:len(fileName)-1]
+							ed.StatusMessage = "File name: " + fileName
+						}
+
+					case input.KeyEnter:
+						if fileName == "" {
+							ed.StatusMessage = "File name cannot be empty!"
+							break
+						}
+
+						if file.Exists(fileName) {
+							inputFileName = false
+							confirmOverwrite = true
+							ed.StatusMessage = "File already exists. Overwrite? (y/n)"
+							break
+						}
+
+						newFile := file.File{
+							Path: fileName,
+						}
+
+						if err := newFile.Save(ed.Lines); err != nil {
+							ed.StatusMessage = "Error saving!"
+							break
+						}
+
+						openFile = &newFile
+						inputFileName = false
+						ed.Dirty = false
+						ed.StatusMessage = "Saved successfully!"
+						statusTimer.Reset(2 * time.Second)
+					}
+				}
+
+				editor.Render(&ed, size)
+
+				continue
+			}
+
 			if value, ok := key.Value.(input.SimpleKey); ok {
 				ed.Insert(value)
 			}
@@ -96,7 +198,12 @@ func main() {
 				case input.KeyArrowRight:
 					ed.MoveRight()
 				case input.KeyCtrlC:
-					running = false
+					if !ed.Dirty {
+						running = false
+					} else {
+						confirmExit = true
+						ed.StatusMessage = "Unsaved changes. Exit anyway? (y/n)"
+					}
 				case input.KeyCtrlLeft:
 					ed.MoveWordLeft()
 				case input.KeyCtrlRight:
@@ -106,10 +213,15 @@ func main() {
 				case input.KeyCtrlK:
 					ed.DeleteLineContent()
 				case input.KeyCtrlS:
-					if openFile != nil {
+					if openFile == nil {
+						inputFileName = true
+						fileName = ""
+						ed.StatusMessage = "File name: "
+					} else {
 						if err := openFile.Save(ed.Lines); err != nil {
 							ed.StatusMessage = "Error saving!"
 						} else {
+							ed.Dirty = false
 							ed.StatusMessage = "Saved successfully!"
 							statusTimer.Reset(2 * time.Second)
 						}
