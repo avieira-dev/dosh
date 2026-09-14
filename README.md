@@ -20,8 +20,8 @@ The project focuses on building a simple and efficient editing environment from 
 
 Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, and save status feedback.
 
-> [!NOTE]  
-> The project is under active development.
+> [!IMPORTANT]  
+> Dosh is under active development and may be unstable or contain bugs. Features are still being implemented and tested, so it is not recommended for editing important files yet.
 
 ---
 
@@ -40,6 +40,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 - [Running](#running)
     - [Clone the repository](#clone-the-repository)
     - [Run](#run)
+    - [Test](#test)
 - [Author](#author)
 - [License](#license)
 
@@ -200,13 +201,33 @@ dosh/
 
 ```bash
 git clone https://github.com/avieira-dev/dosh.git
+cd dosh
 ```
 
 ### Run
 
+To start Dosh without opening a file:
+
 ```bash
 go run ./cmd/dosh
 ```
+
+To open an existing file:
+
+```bash
+go run ./cmd/dosh path/to/file.txt
+```
+
+### Test
+
+To verify that the project builds successfully:
+
+```bash
+go test ./...
+```
+
+> [!NOTE]  
+> Automated tests are still planned and will be added as the project evolves.
 
 ---
 
