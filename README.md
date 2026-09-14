@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, and a status bar.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, and save status feedback.
 
 > [!NOTE]  
 > The project is under active development.
@@ -72,6 +72,10 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Terminal resizing support
 - Vertical screen scrolling
 - Status bar with cursor position
+- File opening
+- File saving with Ctrl + S
+- Save status feedback
+- ANSI terminal colors
 
 ---
 
@@ -109,13 +113,13 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 ### File Management
 
-| Feature                   | Status                    |
-|:--------------------------|:--------------------------|
-| Open files                | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Save files                | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Create new files          | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Save As                   | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Unsaved changes detection | ░░░░░░░░░░░░░░░░░░░░ `0%` |
+| Feature                   | Status                      |
+|:--------------------------|:----------------------------|
+| Open files                | ████████████████████ `100%` |
+| Save files                | ████████████████████ `100%` |
+| Create new files          | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Save As                   | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Unsaved changes detection | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### Editor Features
 
@@ -136,6 +140,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Editor module             | ████████████████████ `100%` |
 | Input module              | ████████████████████ `100%` |
 | Terminal module           | ████████████████████ `100%` |
+| File module               | ████████████████████ `100%` |
 | Rendering abstraction     | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Input command abstraction | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Automated tests           | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
@@ -164,11 +169,14 @@ dosh/
 │   │   ├── editor.go
 │   │   ├── grapheme.go
 │   │   └── line.go
+│   ├── file/
+│   │   └── file.go
 │   ├── input/
 │   │   ├── input.go
 │   │   ├── key.go
 │   │   └── parser.go
 │   └── terminal/
+│       ├── colors.go
 │       └── screen.go
 ├── .gitignore
 ├── go.mod

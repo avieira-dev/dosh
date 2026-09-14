@@ -5,10 +5,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"golang.org/x/term"
 
 	"github.com/avieira-dev/dosh/internal/editor"
+	"github.com/avieira-dev/dosh/internal/file"
 	"github.com/avieira-dev/dosh/internal/input"
 	"github.com/avieira-dev/dosh/internal/terminal"
 )
@@ -22,10 +24,34 @@ func main() {
 
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
-	ed := editor.Editor{
-		Lines: []editor.Line{
-			{Content: []rune{}},
-		},
+	if len(os.Args) > 2 {
+		fmt.Println("[ERROR] The number of arguments passed is invalid!")
+		return
+	}
+
+	var ed editor.Editor
+	var openFile *file.File
+
+	if len(os.Args) == 1 {
+		ed = editor.Editor{
+			Lines: []editor.Line{
+				{Content: []rune{}},
+			},
+		}
+	} else {
+		path := os.Args[1]
+
+		openedFile, err := file.Open(path)
+		if err != nil {
+			fmt.Println("[ERROR]", err)
+			return
+		}
+
+		openFile = &openedFile
+
+		ed = editor.Editor{
+			Lines: openedFile.Lines,
+		}
 	}
 
 	size, err := terminal.GetSize()
@@ -47,6 +73,9 @@ func main() {
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGWINCH)
+
+	statusTimer := time.NewTimer(time.Hour)
+	statusTimer.Stop()
 
 	running := true
 	for running {
@@ -76,6 +105,15 @@ func main() {
 					ed.Backspace()
 				case input.KeyCtrlK:
 					ed.DeleteLineContent()
+				case input.KeyCtrlS:
+					if openFile != nil {
+						if err := openFile.Save(ed.Lines); err != nil {
+							ed.StatusMessage = "Error saving!"
+						} else {
+							ed.StatusMessage = "Saved successfully!"
+							statusTimer.Reset(2 * time.Second)
+						}
+					}
 				case input.KeyTab:
 					ed.Tab()
 				case input.KeyEnter:
@@ -93,6 +131,7 @@ func main() {
 				ed.Scroll(size)
 				editor.Render(&ed, size)
 			}
+
 		case <-signals:
 			size, err = terminal.GetSize()
 			if err != nil {
@@ -103,8 +142,12 @@ func main() {
 
 			ed.Scroll(size)
 			editor.Render(&ed, size)
-		}
 
+		case <-statusTimer.C:
+			ed.StatusMessage = ""
+			ed.Scroll(size)
+			editor.Render(&ed, size)
+		}
 	}
 
 	terminal.ClearScreen()

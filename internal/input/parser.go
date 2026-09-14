@@ -71,6 +71,8 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 			return Key{Type: Special, Value: KeyCtrlK}, true
 		case 13:
 			return Key{Type: Special, Value: KeyEnter}, true
+		case 19:
+			return Key{Type: Special, Value: KeyCtrlS}, true
 		case 127:
 			return Key{Type: Special, Value: KeyBackspace}, true
 		case 27:

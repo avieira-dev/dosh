@@ -14,6 +14,7 @@ type Editor struct {
 	Column        int
 	DesiredColumn int
 	ScrollRow     int
+	StatusMessage string
 }
 
 var wordDelimiters = []rune{
@@ -315,7 +316,13 @@ func Render(ed *Editor, size terminal.Size) {
 	}
 
 	fmt.Printf("\033[%d;1H", size.Height)
-	fmt.Printf("Line %d, Column %d", ed.Row+1, ed.Column+1)
+	fmt.Printf("Line %d, Column %d	", ed.Row+1, ed.Column+1)
+
+	if ed.StatusMessage != "" {
+		fmt.Print(ed.StatusMessage)
+	} else {
+		fmt.Print(terminal.BgBlue + terminal.White + " ^S " + terminal.Reset + " Save")
+	}
 
 	fmt.Print("\0338")
 }

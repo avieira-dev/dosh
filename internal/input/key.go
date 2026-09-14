@@ -23,6 +23,7 @@ const (
 	KeyEnter
 	KeyTab
 	KeyCtrlK
+	KeyCtrlS
 
 	// Control
 	KeyEscape
