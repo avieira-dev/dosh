@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, and exit confirmation.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, and text search.
 
 > [!IMPORTANT]  
 > Dosh is under active development and may be unstable or contain bugs. Features are still being implemented and tested, so it is not recommended for editing important files yet.
@@ -91,6 +91,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Exit confirmation with unsaved changes
 - Save status feedback
 - ANSI terminal colors
+- Text search with Ctrl + F
 
 ---
 
@@ -138,15 +139,15 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 ### Editor Features
 
-| Feature                  | Status                    |
-|:-------------------------|:--------------------------|
-| Search                   | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Replace                  | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Copy and paste           | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Undo and redo            | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Multiple file support    | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Line numbers             | ░░░░░░░░░░░░░░░░░░░░ `0%` |
-| Configurable indentation | ░░░░░░░░░░░░░░░░░░░░ `0%` |
+| Feature                  | Status                      |
+|:-------------------------|:----------------------------|
+| Search                   | ████████████████████ `100%` |
+| Replace                  | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Copy and paste           | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Undo and redo            | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Multiple file support    | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Line numbers             | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Configurable indentation | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### Architecture
 

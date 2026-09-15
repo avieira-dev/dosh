@@ -18,6 +18,7 @@ type Editor struct {
 	ScrollRow     int
 	StatusMessage string
 	Dirty         bool
+	SearchQuery   string
 }
 
 var wordDelimiters = []rune{
@@ -71,6 +72,78 @@ func moveToWordEnd(line []rune, column int) int {
 	}
 
 	return column
+}
+
+func findAllMatchStarts(line []rune, query []rune) []int {
+	var starts []int
+
+	if len(query) == 0 || len(query) > len(line) {
+		return starts
+	}
+
+	for i := 0; i <= len(line)-len(query); i++ {
+		match := true
+
+		for j := range query {
+			if line[i+j] != query[j] {
+				match = false
+				break
+			}
+		}
+
+		if match {
+			starts = append(starts, i)
+		}
+	}
+
+	return starts
+}
+
+func (ed *Editor) findNextMatch() (int, int) {
+	query := []rune(ed.SearchQuery)
+
+	if len(query) == 0 {
+		return -1, -1
+	}
+
+	startRow := ed.Row
+	startColumn := ed.Column
+
+	for row := startRow; row < len(ed.Lines); row++ {
+		line := ed.Lines[row].Content
+		minStart := 0
+
+		if row == startRow {
+			minStart = startColumn + 1
+		}
+
+		for _, start := range findAllMatchStarts(line, query) {
+			if start >= minStart {
+				return row, start
+			}
+		}
+	}
+
+	for row := 0; row <= startRow; row++ {
+		line := ed.Lines[row].Content
+		maxStart := len(line)
+
+		if row == startRow {
+			maxStart = startColumn
+		}
+
+		for _, start := range findAllMatchStarts(line, query) {
+			if start <= maxStart {
+				return row, start
+			}
+		}
+	}
+
+	return -1, -1
+}
+
+func (ed *Editor) FindNextMatch() (int, int) {
+	return ed.findNextMatch()
 }
 
 func (ed *Editor) Insert(value input.SimpleKey) {
@@ -309,7 +382,44 @@ func gutterWidth(lineCount int) int {
 		digits = 3
 	}
 
-	return digits + 2
+	return digits + 1
+}
+
+func writeHighlightedLine(buf *strings.Builder, content []rune, query []rune, isCurrentLine bool) {
+	if len(query) == 0 {
+		buf.WriteString(string(content))
+		return
+	}
+
+	baseBg := ""
+	if isCurrentLine {
+		baseBg = terminal.CurrentLineBg
+	}
+
+	matches := findAllMatchStarts(content, query)
+	matchLen := len(query)
+	matchIndex := 0
+	i := 0
+
+	for i < len(content) {
+		for matchIndex < len(matches) && matches[matchIndex] < i {
+			matchIndex++
+		}
+
+		if matchIndex < len(matches) && matches[matchIndex] == i {
+			buf.WriteString(terminal.MatchBg)
+			buf.WriteString(terminal.MatchFg)
+			buf.WriteString(string(content[i : i+matchLen]))
+			buf.WriteString(terminal.Reset)
+			buf.WriteString(baseBg)
+			i += matchLen
+			matchIndex++
+			continue
+		}
+
+		buf.WriteString(string(content[i]))
+		i++
+	}
 }
 
 func Render(ed *Editor, size terminal.Size, fileName string) {
@@ -340,6 +450,7 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 
 	editorHeight := size.Height - 3
 	gw := gutterWidth(len(ed.Lines))
+	query := []rune(ed.SearchQuery)
 
 	for i := 0; i < editorHeight; i++ {
 		buf.WriteString(terminal.MoveCursorSeq(i+2, 1))
@@ -351,15 +462,15 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		}
 
 		isCurrent := lineIndex == ed.Row
-		lineNumberField := fmt.Sprintf("%*d", gw-2, lineIndex+1)
+		lineNumberField := fmt.Sprintf("%*d ", gw-1, lineIndex+1)
 
 		if isCurrent {
 			buf.WriteString(terminal.CurrentLineBg)
 			buf.WriteString(terminal.GutterActiveFg)
-			buf.WriteString(" " + lineNumberField + " ")
+			buf.WriteString(lineNumberField)
 		} else {
 			buf.WriteString(terminal.GutterFg)
-			buf.WriteString(" " + lineNumberField + " ")
+			buf.WriteString(lineNumberField)
 		}
 
 		buf.WriteString(terminal.Reset)
@@ -369,7 +480,7 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		}
 
 		line := ed.Lines[lineIndex]
-		buf.WriteString(string(line.Content))
+		writeHighlightedLine(&buf, line.Content, query, isCurrent)
 
 		if isCurrent {
 			padding := size.Width - gw - displayWidth(line.Content)
@@ -413,6 +524,7 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 			key, label string
 		}{
 			{"^S", "Save"},
+			{"^F", "Find"},
 			{"^C", "Quit"},
 			{"^K", "Del Line"},
 			{"^←/^→", "Word"},

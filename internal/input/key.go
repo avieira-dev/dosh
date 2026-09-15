@@ -15,6 +15,7 @@ const (
 	KeyEnd
 	KeyCtrlLeft
 	KeyCtrlRight
+	KeyCtrlF
 
 	KeyBackspace
 	KeyDelete

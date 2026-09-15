@@ -29,4 +29,6 @@ const (
 	StatusFg       = "\033[38;5;244m"
 	StatusKeyFg    = "\033[38;5;250m"
 	CurrentLineBg  = "\033[48;5;235m"
+	MatchBg        = "\033[48;5;250m"
+	MatchFg        = "\033[38;5;233m"
 )

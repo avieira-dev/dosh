@@ -88,9 +88,10 @@ func main() {
 	statusTimer.Stop()
 
 	inputFileName := false
-	fileName := ""
+	inputWord := false
 	confirmExit := false
 	confirmOverwrite := false
+	fileName := ""
 
 	running := true
 	for running {
@@ -193,6 +194,47 @@ func main() {
 				continue
 			}
 
+			if inputWord {
+				if value, ok := key.Value.(input.SimpleKey); ok {
+					ed.SearchQuery += string(value)
+					ed.StatusMessage = "Search: " + ed.SearchQuery
+				}
+
+				if value, ok := key.Value.(input.SpecialKey); ok {
+					switch value {
+					case input.KeyBackspace:
+						if len(ed.SearchQuery) > 0 {
+							ed.SearchQuery = ed.SearchQuery[:len(ed.SearchQuery)-1]
+							ed.StatusMessage = "Search: " + ed.SearchQuery
+						}
+					case input.KeyCtrlC:
+						inputWord = false
+						ed.SearchQuery = ""
+						ed.StatusMessage = ""
+					case input.KeyEnter:
+						if ed.SearchQuery == "" {
+							ed.StatusMessage = "The search cannot be empty!"
+							break
+						}
+
+						row, column := ed.FindNextMatch()
+
+						if row == -1 {
+							ed.StatusMessage = "No match found!"
+							break
+						}
+
+						ed.Row = row
+						ed.Column = column
+						ed.DesiredColumn = column
+						ed.StatusMessage = ""
+					}
+				}
+
+				editor.Render(&ed, size, fileDisplayName(openFile))
+				continue
+			}
+
 			if value, ok := key.Value.(input.SimpleKey); ok {
 				ed.Insert(value)
 			}
@@ -236,6 +278,10 @@ func main() {
 							statusTimer.Reset(2 * time.Second)
 						}
 					}
+				case input.KeyCtrlF:
+					inputWord = true
+					ed.SearchQuery = ""
+					ed.StatusMessage = "Search: "
 				case input.KeyTab:
 					ed.Tab()
 				case input.KeyEnter:
