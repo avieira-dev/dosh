@@ -98,6 +98,7 @@ func main() {
 
 	inputFileName := false
 	inputWord := false
+	inputReplace := false
 	confirmExit := false
 	confirmOverwrite := false
 	fileName := ""
@@ -197,6 +198,46 @@ func main() {
 				continue
 			}
 
+			if inputReplace {
+				if value, ok := key.Value.(input.SimpleKey); ok {
+					ed.ReplaceQuery += string(value)
+					ed.StatusMessage = "Replace with: " + ed.ReplaceQuery
+				}
+
+				if value, ok := key.Value.(input.SpecialKey); ok {
+					switch value {
+					case input.KeyBackspace:
+						if len(ed.ReplaceQuery) > 0 {
+							ed.ReplaceQuery = ed.ReplaceQuery[:len(ed.ReplaceQuery)-1]
+							ed.StatusMessage = "Replace with: " + ed.ReplaceQuery
+						}
+
+					case input.KeyCtrlC:
+						inputReplace = false
+						ed.ReplaceQuery = ""
+						ed.StatusMessage = ""
+
+					case input.KeyEnter:
+						if ed.ReplaceCurrentMatch() {
+							ed.StatusMessage = "Replaced!"
+						} else {
+							ed.StatusMessage = "No match found!"
+						}
+						statusTimer.Reset(2 * time.Second)
+
+					case input.KeyCtrlA:
+						count := ed.ReplaceAll()
+						inputReplace = false
+						ed.ReplaceQuery = ""
+						ed.StatusMessage = fmt.Sprintf("Replaced %d occurrence(s)!", count)
+						statusTimer.Reset(2 * time.Second)
+					}
+				}
+
+				editor.Render(&ed, size, fileDisplayName(openFile))
+				continue
+			}
+
 			if inputWord {
 				if value, ok := key.Value.(input.SimpleKey); ok {
 					ed.SearchQuery += string(value)
@@ -210,10 +251,12 @@ func main() {
 							ed.SearchQuery = ed.SearchQuery[:len(ed.SearchQuery)-1]
 							ed.StatusMessage = "Search: " + ed.SearchQuery
 						}
+
 					case input.KeyCtrlC:
 						inputWord = false
 						ed.SearchQuery = ""
 						ed.StatusMessage = ""
+
 					case input.KeyEnter:
 						if ed.SearchQuery == "" {
 							ed.StatusMessage = "The search cannot be empty!"
@@ -230,11 +273,13 @@ func main() {
 						ed.Row = row
 						ed.Column = column
 						ed.DesiredColumn = column
+						inputWord = false
 						ed.StatusMessage = ""
 					}
 				}
 
 				editor.Render(&ed, size, fileDisplayName(openFile))
+
 				continue
 			}
 
@@ -279,6 +324,15 @@ func main() {
 					inputWord = true
 					ed.SearchQuery = ""
 					ed.StatusMessage = "Search: "
+				case input.KeyCtrlR:
+					if ed.SearchQuery == "" {
+						ed.StatusMessage = "Search for a term first (Ctrl+F)!"
+						statusTimer.Reset(2 * time.Second)
+					} else {
+						inputReplace = true
+						ed.ReplaceQuery = ""
+						ed.StatusMessage = "Replace with: "
+					}
 				case input.KeyCtrlZ:
 					ed.Undo()
 					statusTimer.Reset(2 * time.Second)

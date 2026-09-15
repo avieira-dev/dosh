@@ -19,6 +19,7 @@ type Editor struct {
 	StatusMessage string
 	Dirty         bool
 	SearchQuery   string
+	ReplaceQuery  string
 	History       *History
 	lastAction    string
 }
@@ -149,6 +150,92 @@ func (ed *Editor) FindNextMatch() (int, int) {
 	}
 
 	return -1, -1
+}
+
+func (ed *Editor) matchAtCursor() bool {
+	query := []rune(ed.SearchQuery)
+	line := ed.Lines[ed.Row].Content
+
+	if len(query) == 0 || ed.Column+len(query) > len(line) {
+		return false
+	}
+
+	for i, r := range query {
+		if line[ed.Column+i] != r {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (ed *Editor) replaceAt(row int, column int) {
+	query := []rune(ed.SearchQuery)
+	replacement := []rune(ed.ReplaceQuery)
+	line := ed.Lines[row].Content
+
+	newLine := make([]rune, 0, len(line)-len(query)+len(replacement))
+	newLine = append(newLine, line[:column]...)
+	newLine = append(newLine, replacement...)
+	newLine = append(newLine, line[column+len(query):]...)
+
+	ed.Lines[row].Content = newLine
+}
+
+func (ed *Editor) ReplaceCurrentMatch() bool {
+	if !ed.matchAtCursor() {
+		row, column := ed.FindNextMatch()
+
+		if row == -1 {
+			return false
+		}
+
+		ed.Row = row
+		ed.Column = column
+		ed.DesiredColumn = column
+	}
+
+	ed.beginChange("replace")
+
+	ed.replaceAt(ed.Row, ed.Column)
+	ed.Column += len([]rune(ed.ReplaceQuery))
+	ed.DesiredColumn = ed.Column
+	ed.Dirty = true
+
+	if nextRow, nextColumn := ed.FindNextMatch(); nextRow != -1 {
+		ed.Row = nextRow
+		ed.Column = nextColumn
+		ed.DesiredColumn = nextColumn
+	}
+
+	return true
+}
+
+func (ed *Editor) ReplaceAll() int {
+	query := []rune(ed.SearchQuery)
+
+	if len(query) == 0 {
+		return 0
+	}
+
+	ed.beginChange("replaceall")
+
+	count := 0
+
+	for row := range ed.Lines {
+		starts := findAllMatchStarts(ed.Lines[row].Content, query)
+
+		for i := len(starts) - 1; i >= 0; i-- {
+			ed.replaceAt(row, starts[i])
+			count++
+		}
+	}
+
+	if count > 0 {
+		ed.Dirty = true
+	}
+
+	return count
 }
 
 func (ed *Editor) snapshot() Snapshot {
@@ -595,6 +682,7 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		}{
 			{"^S", "Save"},
 			{"^F", "Find"},
+			{"^R", "Replace"},
 			{"^Z", "Undo"},
 			{"^Y", "Redo"},
 			{"^C", "Quit"},

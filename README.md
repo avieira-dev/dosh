@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, text search with match highlighting, and undo/redo.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, text search with match highlighting, text replacement, and undo/redo.
 
 > [!IMPORTANT]  
 > Dosh is under active development and may be unstable or contain bugs. Features are still being implemented and tested, so it is not recommended for editing important files yet.
@@ -96,6 +96,9 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Text search with Ctrl + F
 - Search match highlighting
 - Cycle through search matches
+- Text replacement with Ctrl + R
+- Replace current match
+- Replace all matches with Ctrl + A
 - Undo with Ctrl + Z
 - Redo with Ctrl + Y
 
@@ -151,7 +154,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Search match highlighting| ████████████████████ `100%` |
 | Undo and redo            | ████████████████████ `100%` |
 | Line numbers             | ████████████████████ `100%` |
-| Replace                  | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Replace                  | ████████████████████ `100%` |
 | Copy and paste           | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Multiple file support    | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Configurable indentation | ░░░░░░░░░░░░░░░░░░░░ `0%`   |

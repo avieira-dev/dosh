@@ -25,6 +25,8 @@ const (
 	KeyCtrlS
 	KeyCtrlZ
 	KeyCtrlY
+	KeyCtrlR
+	KeyCtrlA
 
 	KeyEscape
 	KeyCtrlC

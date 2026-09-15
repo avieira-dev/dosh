@@ -63,6 +63,8 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 	switch parser.State {
 	case StateNormal:
 		switch value {
+		case 1:
+			return Key{Type: Special, Value: KeyCtrlA}, true
 		case 3:
 			return Key{Type: Special, Value: KeyCtrlC}, true
 		case 6:
@@ -73,6 +75,8 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 			return Key{Type: Special, Value: KeyCtrlK}, true
 		case 13:
 			return Key{Type: Special, Value: KeyEnter}, true
+		case 18:
+			return Key{Type: Special, Value: KeyCtrlR}, true
 		case 19:
 			return Key{Type: Special, Value: KeyCtrlS}, true
 		case 25:
