@@ -51,7 +51,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 <p align="center">
     <em>Dosh running in the terminal</em><br>
-    <img src="./assets/screenshots/screenshot-dosh01.png" alt="Dosh terminal text editor displaying Hello, World!" width="100%"/>
+    <img src="./assets/screenshots/screenshot-01.png" alt="Dosh terminal text editor displaying Hello, World!" width="100%"/>
 </p>
 
 ---
