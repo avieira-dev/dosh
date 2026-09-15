@@ -23,6 +23,8 @@ const (
 	KeyTab
 	KeyCtrlK
 	KeyCtrlS
+	KeyCtrlZ
+	KeyCtrlY
 
 	KeyEscape
 	KeyCtrlC

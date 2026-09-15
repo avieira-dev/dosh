@@ -24,6 +24,19 @@ func fileDisplayName(openFile *file.File) string {
 	return filepath.Base(openFile.Path)
 }
 
+func saveFile(ed *editor.Editor, target *file.File, statusTimer *time.Timer) bool {
+	if err := target.Save(ed.Lines); err != nil {
+		ed.StatusMessage = "Error saving!"
+		return false
+	}
+
+	ed.Dirty = false
+	ed.StatusMessage = "Saved successfully!"
+	statusTimer.Reset(2 * time.Second)
+
+	return true
+}
+
 func main() {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
@@ -42,11 +55,9 @@ func main() {
 	var openFile *file.File
 
 	if len(os.Args) == 1 {
-		ed = editor.Editor{
-			Lines: []editor.Line{
-				{Content: []rune{}},
-			},
-		}
+		ed = editor.NewEditor([]editor.Line{
+			{Content: []rune{}},
+		})
 	} else {
 		path := os.Args[1]
 
@@ -58,9 +69,7 @@ func main() {
 
 		openFile = &openedFile
 
-		ed = editor.Editor{
-			Lines: openedFile.Lines,
-		}
+		ed = editor.NewEditor(openedFile.Lines)
 	}
 
 	size, err := terminal.GetSize()
@@ -124,13 +133,8 @@ func main() {
 							Path: fileName,
 						}
 
-						if err := newFile.Save(ed.Lines); err != nil {
-							ed.StatusMessage = "Error saving!"
-						} else {
+						if saveFile(&ed, &newFile, statusTimer) {
 							openFile = &newFile
-							ed.Dirty = false
-							ed.StatusMessage = "Saved successfully!"
-							statusTimer.Reset(2 * time.Second)
 						}
 
 						confirmOverwrite = false
@@ -159,6 +163,11 @@ func main() {
 							ed.StatusMessage = "File name: " + fileName
 						}
 
+					case input.KeyCtrlC:
+						inputFileName = false
+						fileName = ""
+						ed.StatusMessage = ""
+
 					case input.KeyEnter:
 						if fileName == "" {
 							ed.StatusMessage = "File name cannot be empty!"
@@ -176,16 +185,10 @@ func main() {
 							Path: fileName,
 						}
 
-						if err := newFile.Save(ed.Lines); err != nil {
-							ed.StatusMessage = "Error saving!"
-							break
+						if saveFile(&ed, &newFile, statusTimer) {
+							openFile = &newFile
+							inputFileName = false
 						}
-
-						openFile = &newFile
-						inputFileName = false
-						ed.Dirty = false
-						ed.StatusMessage = "Saved successfully!"
-						statusTimer.Reset(2 * time.Second)
 					}
 				}
 
@@ -270,18 +273,18 @@ func main() {
 						fileName = ""
 						ed.StatusMessage = "File name: "
 					} else {
-						if err := openFile.Save(ed.Lines); err != nil {
-							ed.StatusMessage = "Error saving!"
-						} else {
-							ed.Dirty = false
-							ed.StatusMessage = "Saved successfully!"
-							statusTimer.Reset(2 * time.Second)
-						}
+						saveFile(&ed, openFile, statusTimer)
 					}
 				case input.KeyCtrlF:
 					inputWord = true
 					ed.SearchQuery = ""
 					ed.StatusMessage = "Search: "
+				case input.KeyCtrlZ:
+					ed.Undo()
+					statusTimer.Reset(2 * time.Second)
+				case input.KeyCtrlY:
+					ed.Redo()
+					statusTimer.Reset(2 * time.Second)
 				case input.KeyTab:
 					ed.Tab()
 				case input.KeyEnter:

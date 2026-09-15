@@ -19,6 +19,15 @@ type Editor struct {
 	StatusMessage string
 	Dirty         bool
 	SearchQuery   string
+	History       *History
+	lastAction    string
+}
+
+func NewEditor(lines []Line) Editor {
+	return Editor{
+		Lines:   lines,
+		History: NewHistory(),
+	}
 }
 
 var wordDelimiters = []rune{
@@ -99,7 +108,7 @@ func findAllMatchStarts(line []rune, query []rune) []int {
 	return starts
 }
 
-func (ed *Editor) findNextMatch() (int, int) {
+func (ed *Editor) FindNextMatch() (int, int) {
 	query := []rune(ed.SearchQuery)
 
 	if len(query) == 0 {
@@ -142,11 +151,71 @@ func (ed *Editor) findNextMatch() (int, int) {
 	return -1, -1
 }
 
-func (ed *Editor) FindNextMatch() (int, int) {
-	return ed.findNextMatch()
+func (ed *Editor) snapshot() Snapshot {
+	return Snapshot{
+		Lines:  cloneLines(ed.Lines),
+		Row:    ed.Row,
+		Column: ed.Column,
+	}
+}
+
+func (ed *Editor) restore(snapshot Snapshot) {
+	ed.Lines = cloneLines(snapshot.Lines)
+	ed.Row = snapshot.Row
+	ed.Column = snapshot.Column
+	ed.DesiredColumn = snapshot.Column
+	ed.Dirty = true
+	ed.lastAction = ""
+}
+
+func (ed *Editor) beginChange(kind string) {
+	if ed.History == nil {
+		return
+	}
+
+	if kind == ed.lastAction {
+		return
+	}
+
+	ed.History.Push(ed.snapshot())
+	ed.lastAction = kind
+}
+
+func (ed *Editor) Undo() {
+	if ed.History == nil {
+		return
+	}
+
+	previous, ok := ed.History.Undo(ed.snapshot())
+
+	if !ok {
+		ed.StatusMessage = "Nothing to undo!"
+		return
+	}
+
+	ed.restore(previous)
+	ed.StatusMessage = "Undo"
+}
+
+func (ed *Editor) Redo() {
+	if ed.History == nil {
+		return
+	}
+
+	next, ok := ed.History.Redo(ed.snapshot())
+
+	if !ok {
+		ed.StatusMessage = "Nothing to redo!"
+		return
+	}
+
+	ed.restore(next)
+	ed.StatusMessage = "Redo"
 }
 
 func (ed *Editor) Insert(value input.SimpleKey) {
+	ed.beginChange("insert")
+
 	ed.Lines[ed.Row].Content = append(ed.Lines[ed.Row].Content, 0)
 	copy(ed.Lines[ed.Row].Content[ed.Column+1:], ed.Lines[ed.Row].Content[ed.Column:])
 	ed.Lines[ed.Row].Content[ed.Column] = rune(value)
@@ -156,6 +225,8 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 }
 
 func (ed *Editor) Backspace() {
+	ed.beginChange("backspace")
+
 	if ed.Column > 0 {
 		current := ed.Lines[ed.Row].Content
 		start := previousGraphemeStart(current, ed.Column)
@@ -181,6 +252,8 @@ func (ed *Editor) Backspace() {
 }
 
 func (ed *Editor) Delete() {
+	ed.beginChange("delete")
+
 	currentLine := ed.Lines[ed.Row].Content
 
 	if ed.Column < len(currentLine) {
@@ -205,6 +278,8 @@ func (ed *Editor) Delete() {
 }
 
 func (ed *Editor) DeleteLineContent() {
+	ed.beginChange("deleteline")
+
 	if len(ed.Lines[ed.Row].Content) > 0 {
 		ed.Lines[ed.Row].Content = nil
 		ed.Dirty = true
@@ -221,6 +296,8 @@ func (ed *Editor) Tab() {
 }
 
 func (ed *Editor) Enter() {
+	ed.beginChange("enter")
+
 	line := ed.Lines[ed.Row].Content
 	before := line[:ed.Column]
 	after := line[ed.Column:]
@@ -241,42 +318,35 @@ func (ed *Editor) Enter() {
 	ed.Dirty = true
 }
 
-func (ed *Editor) MoveUp() {
-	if ed.Row > 0 {
-		ed.Row--
+func (ed *Editor) moveVertical(delta int) {
+	newRow := ed.Row + delta
 
-		currentLineLength := len(ed.Lines[ed.Row].Content)
-
-		if currentLineLength < ed.DesiredColumn {
-			ed.Column = currentLineLength
-		} else {
-			ed.Column = ed.DesiredColumn
-		}
-
-		ed.Column = normalizeGraphemeColumn(
-			ed.Lines[ed.Row].Content,
-			ed.Column,
-		)
+	if newRow < 0 || newRow >= len(ed.Lines) {
+		return
 	}
+
+	ed.Row = newRow
+
+	currentLineLength := len(ed.Lines[ed.Row].Content)
+
+	if currentLineLength < ed.DesiredColumn {
+		ed.Column = currentLineLength
+	} else {
+		ed.Column = ed.DesiredColumn
+	}
+
+	ed.Column = normalizeGraphemeColumn(
+		ed.Lines[ed.Row].Content,
+		ed.Column,
+	)
+}
+
+func (ed *Editor) MoveUp() {
+	ed.moveVertical(-1)
 }
 
 func (ed *Editor) MoveDown() {
-	if ed.Row < len(ed.Lines)-1 {
-		ed.Row++
-
-		currentLineLength := len(ed.Lines[ed.Row].Content)
-
-		if currentLineLength < ed.DesiredColumn {
-			ed.Column = currentLineLength
-		} else {
-			ed.Column = ed.DesiredColumn
-		}
-
-		ed.Column = normalizeGraphemeColumn(
-			ed.Lines[ed.Row].Content,
-			ed.Column,
-		)
-	}
+	ed.moveVertical(1)
 }
 
 func (ed *Editor) Scroll(size terminal.Size) {
@@ -525,6 +595,8 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		}{
 			{"^S", "Save"},
 			{"^F", "Find"},
+			{"^Z", "Undo"},
+			{"^Y", "Redo"},
 			{"^C", "Quit"},
 			{"^K", "Del Line"},
 			{"^←/^→", "Word"},

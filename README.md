@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, and text search.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, text search with match highlighting, and undo/redo.
 
 > [!IMPORTANT]  
 > Dosh is under active development and may be unstable or contain bugs. Features are still being implemented and tested, so it is not recommended for editing important files yet.
@@ -79,10 +79,12 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Ctrl + Left / Ctrl + Right navigation
 - Delete key parsing
 - ANSI terminal rendering
+- Custom monochrome theme
+- Line number gutter with current line highlight
 - Clean terminal restoration on exit
 - Terminal resizing support
 - Vertical screen scrolling
-- Status bar with cursor position
+- Status bar with cursor position and shortcuts
 - File opening
 - File saving with Ctrl + S
 - New file creation
@@ -92,6 +94,10 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Save status feedback
 - ANSI terminal colors
 - Text search with Ctrl + F
+- Search match highlighting
+- Cycle through search matches
+- Undo with Ctrl + Z
+- Redo with Ctrl + Y
 
 ---
 
@@ -142,11 +148,12 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Feature                  | Status                      |
 |:-------------------------|:----------------------------|
 | Search                   | ████████████████████ `100%` |
+| Search match highlighting| ████████████████████ `100%` |
+| Undo and redo            | ████████████████████ `100%` |
+| Line numbers             | ████████████████████ `100%` |
 | Replace                  | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Copy and paste           | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Undo and redo            | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Multiple file support    | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Line numbers             | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Configurable indentation | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### Architecture
@@ -157,6 +164,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Input module              | ████████████████████ `100%` |
 | Terminal module           | ████████████████████ `100%` |
 | File module               | ████████████████████ `100%` |
+| History module            | ████████████████████ `100%` |
 | Rendering abstraction     | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Input command abstraction | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Automated tests           | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
@@ -184,6 +192,7 @@ dosh/
 │   ├── editor/
 │   │   ├── editor.go
 │   │   ├── grapheme.go
+│   │   ├── history.go
 │   │   └── line.go
 │   ├── file/
 │   │   └── file.go
