@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, multiline editing, Unicode text support, terminal resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, text search with match highlighting, text replacement, and undo/redo.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, auto-indentation, multiline editing, Unicode text support, responsive layout resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, text search with match highlighting, text replacement, and undo/redo.
 
 > [!IMPORTANT]  
 > Dosh is under active development and may be unstable or contain bugs. Features are still being implemented and tested, so it is not recommended for editing important files yet.
@@ -69,7 +69,6 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Backspace line merging
 - Delete line merging
 - Line content deletion with Ctrl + K
-- Tab insertion
 - Multiline text editing
 - Horizontal cursor movement
 - Vertical cursor movement
@@ -90,7 +89,6 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Custom monochrome theme
 - Line number gutter with current line highlight
 - Clean terminal restoration on exit
-- Terminal resizing support
 - Vertical screen scrolling
 - Status bar with cursor position and shortcuts
 - File opening
@@ -109,6 +107,9 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Replace all matches with Ctrl + A
 - Undo with Ctrl + Z
 - Redo with Ctrl + Y
+- Tab insertion & auto-indentation on new lines
+- Smart indentation backspace handling
+- Responsive layout & terminal resizing support
 
 ---
 
@@ -120,7 +121,6 @@ Dosh currently provides basic text editing capabilities, including character ins
 |:---------------------------|:----------------------------|
 | Character insertion        | ████████████████████ `100%` |
 | Character deletion         | ████████████████████ `100%` |
-| Tab insertion              | ████████████████████ `100%` |
 | Multiline editing          | ████████████████████ `100%` |
 | Horizontal cursor movement | ████████████████████ `100%` |
 | Vertical cursor movement   | ████████████████████ `100%` |
@@ -131,18 +131,19 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Word navigation            | ████████████████████ `100%` |
 | Line content deletion      | ████████████████████ `100%` |
 | Unicode text support       | ████████████████████ `100%` |
+| Tab & auto-indentation     | ████████████████████ `100%` |
 
 ### Terminal
 
-| Feature                 | Status                      |
-|:------------------------|:----------------------------|
-| Raw keyboard input      | ████████████████████ `100%` |
-| ANSI terminal rendering | ████████████████████ `100%` |
-| Cursor positioning      | ████████████████████ `100%` |
-| Terminal restoration    | ████████████████████ `100%` |
-| Terminal resizing       | ████████████████████ `100%` |
-| Screen scrolling        | ████████████████████ `100%` |
-| Status bar              | ████████████████████ `100%` |
+| Feature                    | Status                      |
+|:---------------------------|:----------------------------|
+| Raw keyboard input         | ████████████████████ `100%` |
+| ANSI terminal rendering    | ████████████████████ `100%` |
+| Cursor positioning         | ████████████████████ `100%` |
+| Terminal restoration       | ████████████████████ `100%` |
+| Responsive layout resizing | ████████████████████ `100%` |
+| Screen scrolling           | ████████████████████ `100%` |
+| Status bar                 | ████████████████████ `100%` |
 
 ### File Management
 

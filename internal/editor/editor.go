@@ -8,6 +8,7 @@ import (
 
 	"github.com/avieira-dev/dosh/internal/input"
 	"github.com/avieira-dev/dosh/internal/terminal"
+	"github.com/rivo/uniseg"
 )
 
 type Editor struct {
@@ -111,6 +112,23 @@ func findAllMatchStarts(line []rune, query []rune) []int {
 	}
 
 	return starts
+}
+
+func truncateRunes(runes []rune, maxWidth int) []rune {
+	if maxWidth <= 0 {
+		return nil
+	}
+
+	currentWidth := 0
+	for i, r := range runes {
+		w := uniseg.StringWidth(string(r))
+		if currentWidth+w > maxWidth {
+			return runes[:i]
+		}
+		currentWidth += w
+	}
+
+	return runes
 }
 
 func (ed *Editor) FindNextMatch() (int, int) {
@@ -324,6 +342,22 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 	ed.Dirty = true
 }
 
+func isIndentRune(r rune) bool {
+	return r == ' ' || r == '\t'
+}
+
+func (ed *Editor) isLinePrefixIndentOnly() bool {
+	line := ed.Lines[ed.Row].Content
+
+	for i := 0; i < ed.Column; i++ {
+		if !isIndentRune(line[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (ed *Editor) Backspace() {
 	ed.beginChange("backspace")
 
@@ -335,6 +369,15 @@ func (ed *Editor) Backspace() {
 
 	if ed.Column > 0 {
 		current := ed.Lines[ed.Row].Content
+
+		if ed.isLinePrefixIndentOnly() && ed.Column >= 4 && string(current[ed.Column-4:ed.Column]) == "    " {
+			ed.Lines[ed.Row].Content = append(current[:ed.Column-4], current[ed.Column:]...)
+			ed.Column -= 4
+			ed.DesiredColumn = ed.Column
+			ed.Dirty = true
+			return
+		}
+
 		start := previousGraphemeStart(current, ed.Column)
 
 		ed.Lines[ed.Row].Content = append(current[:start], current[ed.Column:]...)
@@ -408,6 +451,20 @@ func (ed *Editor) Tab() {
 	}
 }
 
+func lineIndentPrefix(line []rune) []rune {
+	var indent []rune
+
+	for _, r := range line {
+		if isIndentRune(r) {
+			indent = append(indent, r)
+		} else {
+			break
+		}
+	}
+
+	return indent
+}
+
 func (ed *Editor) Enter() {
 	ed.beginChange("enter")
 
@@ -419,10 +476,16 @@ func (ed *Editor) Enter() {
 	before := line[:ed.Column]
 	after := line[ed.Column:]
 
+	indent := lineIndentPrefix(before)
+
 	ed.Lines[ed.Row].Content = before
 
+	newLineContent := make([]rune, 0, len(indent)+len(after))
+	newLineContent = append(newLineContent, indent...)
+	newLineContent = append(newLineContent, after...)
+
 	newLine := Line{
-		Content: after,
+		Content: newLineContent,
 	}
 
 	ed.Lines = append(ed.Lines, Line{})
@@ -430,7 +493,7 @@ func (ed *Editor) Enter() {
 	ed.Lines[ed.Row+1] = newLine
 
 	ed.Row++
-	ed.Column = 0
+	ed.Column = len(indent)
 	ed.DesiredColumn = ed.Column
 	ed.Dirty = true
 }
@@ -659,28 +722,37 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 	buf.WriteString(terminal.MoveCursorSeq(1, 1))
 
 	title := " DOSH v0.1.0 "
-	titleLen := len(title)
 	leftRule := 2
 
-	buf.WriteString(terminal.RuleFg)
-	buf.WriteString(strings.Repeat("─", leftRule))
-	buf.WriteString(terminal.Reset)
-	buf.WriteString(terminal.TitleFg)
-	buf.WriteString(title)
-	buf.WriteString(terminal.Reset)
-	buf.WriteString(terminal.RuleFg)
+	if size.Width < len(title)+leftRule {
+		headerText := string(truncateRunes([]rune(title), size.Width))
+		buf.WriteString(terminal.TitleFg)
+		buf.WriteString(headerText)
+		buf.WriteString(terminal.Reset)
+	} else {
+		buf.WriteString(terminal.RuleFg)
+		buf.WriteString(strings.Repeat("─", leftRule))
+		buf.WriteString(terminal.Reset)
+		buf.WriteString(terminal.TitleFg)
+		buf.WriteString(title)
+		buf.WriteString(terminal.Reset)
+		buf.WriteString(terminal.RuleFg)
 
-	rightRule := size.Width - leftRule - titleLen
-	if rightRule < 0 {
-		rightRule = 0
+		rightRule := size.Width - leftRule - len(title)
+		if rightRule > 0 {
+			buf.WriteString(strings.Repeat("─", rightRule))
+		}
+		buf.WriteString(terminal.Reset)
 	}
-
-	buf.WriteString(strings.Repeat("─", rightRule))
-	buf.WriteString(terminal.Reset)
 
 	editorHeight := size.Height - 3
 	gw := gutterWidth(len(ed.Lines))
 	query := []rune(ed.SearchQuery)
+
+	maxLineContentWidth := size.Width - gw
+	if maxLineContentWidth < 0 {
+		maxLineContentWidth = 0
+	}
 
 	for i := 0; i < editorHeight; i++ {
 		buf.WriteString(terminal.MoveCursorSeq(i+2, 1))
@@ -711,13 +783,14 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		}
 
 		line := ed.Lines[lineIndex]
+
+		visibleContent := truncateRunes(line.Content, maxLineContentWidth)
 		selectionStart, selectionEnd, selected := ed.selectionBounds(lineIndex)
 
-		writeHighlightedLine(&buf, line.Content, query, isCurrent, selectionStart, selectionEnd, selected)
+		writeHighlightedLine(&buf, visibleContent, query, isCurrent, selectionStart, selectionEnd, selected)
 
 		if isCurrent {
-			padding := size.Width - gw - displayWidth(line.Content)
-
+			padding := size.Width - gw - displayWidth(visibleContent)
 			if padding > 0 {
 				buf.WriteString(strings.Repeat(" ", padding))
 			}
@@ -728,61 +801,70 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 
 	buf.WriteString(terminal.MoveCursorSeq(size.Height-1, 1))
 	buf.WriteString(terminal.RuleFg)
-	buf.WriteString(strings.Repeat("─", size.Width))
+	if size.Width > 0 {
+		buf.WriteString(strings.Repeat("─", size.Width))
+	}
 	buf.WriteString(terminal.Reset)
 
 	buf.WriteString(terminal.MoveCursorSeq(size.Height, 1))
 	buf.WriteString(terminal.ClearLineSeq())
 
+	var statusLeft strings.Builder
 	if fileName != "" {
-		buf.WriteString(terminal.TitleFg)
-		buf.WriteString(fileName)
-		buf.WriteString(terminal.Reset)
-		buf.WriteString(terminal.StatusFg)
-		buf.WriteString("  ·  ")
-	} else {
-		buf.WriteString(terminal.StatusFg)
+		statusLeft.WriteString(fileName)
+		statusLeft.WriteString("  ·  ")
 	}
+	statusLeft.WriteString(fmt.Sprintf("Ln %d, Col %d", ed.Row+1, ed.Column+1))
 
-	fmt.Fprintf(&buf, "Ln %d, Col %d", ed.Row+1, ed.Column+1)
-	buf.WriteString(terminal.Reset)
-
-	if ed.StatusMessage != "" {
-		buf.WriteString("   ")
+	leftStr := statusLeft.String()
+	leftWidth := uniseg.StringWidth(leftStr)
+	if leftWidth > size.Width {
+		leftStr = string(truncateRunes([]rune(leftStr), size.Width))
 		buf.WriteString(terminal.StatusFg)
-		buf.WriteString(ed.StatusMessage)
+		buf.WriteString(leftStr)
 		buf.WriteString(terminal.Reset)
 	} else {
-		shortcuts := []struct {
-			key, label string
-		}{
-			{"^S", "Save"},
-			{"^F", "Find"},
-			{"^R", "Replace"},
-			{"^Z/^Y", "Undo/Redo"},
-			{"^C", "Copy"},
-			{"^X", "Cut"},
-			{"^V", "Paste"},
-			{"^←/^→", "Word"},
-			{"⇧+←/→", "Select"},
-			{"⇧+Home/End", "Select Line"},
-			{"⇧+Ctrl+←/→", "Select Word"},
-			{"^Q", "Quit"},
-		}
+		buf.WriteString(terminal.StatusFg)
+		buf.WriteString(leftStr)
+		buf.WriteString(terminal.Reset)
 
-		buf.WriteString("        ")
+		remainingWidth := size.Width - leftWidth
 
-		for i, s := range shortcuts {
-			buf.WriteString(terminal.StatusKeyFg)
-			buf.WriteString(s.key)
-			buf.WriteString(terminal.Reset)
-			buf.WriteString(terminal.StatusFg)
-			buf.WriteString(" " + s.label)
-			buf.WriteString(terminal.Reset)
-
-			if i < len(shortcuts)-1 {
-				buf.WriteString("  ")
+		if ed.StatusMessage != "" {
+			msg := "   " + ed.StatusMessage
+			if uniseg.StringWidth(msg) <= remainingWidth {
+				buf.WriteString(terminal.StatusFg)
+				buf.WriteString(msg)
+				buf.WriteString(terminal.Reset)
 			}
+		} else {
+			shortcuts := []struct {
+				key, label string
+			}{
+				{"^S", "Save"},
+				{"^F", "Find"},
+				{"^R", "Replace"},
+				{"^Z/^Y", "Undo/Redo"},
+				{"^C", "Copy"},
+				{"^X", "Cut"},
+				{"^V", "Paste"},
+				{"^Q", "Quit"},
+			}
+
+			var shortcutsBuf strings.Builder
+			shortcutsBuf.WriteString("  ")
+
+			for _, s := range shortcuts {
+				item := s.key + " " + s.label + "  "
+				if uniseg.StringWidth(shortcutsBuf.String()+item) > remainingWidth {
+					break
+				}
+				shortcutsBuf.WriteString(item)
+			}
+
+			buf.WriteString(terminal.StatusFg)
+			buf.WriteString(shortcutsBuf.String())
+			buf.WriteString(terminal.Reset)
 		}
 	}
 
