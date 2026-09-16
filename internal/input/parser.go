@@ -305,7 +305,7 @@ func (parser *Parser) Parse(value byte) (Key, bool) {
 		}
 
 		parser.reset()
-		return Key{}, false
+		return Key{Type: Special, Value: KeyEscape}, true
 
 	case StateCSI:
 		parser.Buffer = append(parser.Buffer, value)

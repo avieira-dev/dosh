@@ -166,7 +166,7 @@ func main() {
 							ed.StatusMessage = "File name: " + fileName
 						}
 
-					case input.KeyCtrlC:
+					case input.KeyEscape, input.KeyCtrlC:
 						inputFileName = false
 						fileName = ""
 						ed.StatusMessage = ""
@@ -213,7 +213,7 @@ func main() {
 							ed.StatusMessage = "Replace with: " + ed.ReplaceQuery
 						}
 
-					case input.KeyCtrlC:
+					case input.KeyEscape, input.KeyCtrlC:
 						inputReplace = false
 						ed.ReplaceQuery = ""
 						ed.StatusMessage = ""
@@ -223,6 +223,7 @@ func main() {
 							ed.StatusMessage = "Replaced!"
 						} else {
 							ed.StatusMessage = "No match found!"
+							inputReplace = false
 						}
 
 						statusTimer.Reset(2 * time.Second)
@@ -254,7 +255,7 @@ func main() {
 							ed.StatusMessage = "Search: " + ed.SearchQuery
 						}
 
-					case input.KeyCtrlC:
+					case input.KeyEscape, input.KeyCtrlC:
 						inputWord = false
 						ed.SearchQuery = ""
 						ed.StatusMessage = ""

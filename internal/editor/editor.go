@@ -161,7 +161,11 @@ func (ed *Editor) FindNextMatch() (int, int) {
 		maxStart := len(line)
 
 		if row == startRow {
-			maxStart = startColumn
+			maxStart = startColumn - 1
+		}
+
+		if maxStart < 0 {
+			continue
 		}
 
 		for _, start := range findAllMatchStarts(line, query) {
