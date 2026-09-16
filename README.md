@@ -77,6 +77,14 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Home and End navigation
 - Word navigation
 - Ctrl + Left / Ctrl + Right navigation
+- Shift + Arrow selection
+- Shift + Home / Shift + End selection
+- Shift + Ctrl + Left / Shift + Ctrl + Right word selection
+- Multi-line text selection
+- Copy with Ctrl + C
+- Cut with Ctrl + X
+- Paste with Ctrl + V
+- Delete selected text
 - Delete key parsing
 - ANSI terminal rendering
 - Custom monochrome theme
@@ -148,16 +156,17 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 ### Editor Features
 
-| Feature                  | Status                      |
-|:-------------------------|:----------------------------|
-| Search                   | ████████████████████ `100%` |
-| Search match highlighting| ████████████████████ `100%` |
-| Undo and redo            | ████████████████████ `100%` |
-| Line numbers             | ████████████████████ `100%` |
-| Replace                  | ████████████████████ `100%` |
-| Copy and paste           | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Multiple file support    | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
-| Configurable indentation | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Feature                   | Status                      |
+|:--------------------------|:----------------------------|
+| Search                    | ████████████████████ `100%` |
+| Search match highlighting | ████████████████████ `100%` |
+| Undo and redo             | ████████████████████ `100%` |
+| Line numbers              | ████████████████████ `100%` |
+| Replace                   | ████████████████████ `100%` |
+| Copy and paste            | ████████████████████ `100%` |
+| Text selection            | ████████████████████ `100%` |
+| Multiple file support     | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
+| Configurable indentation  | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 
 ### Architecture
 
@@ -167,6 +176,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Input module              | ████████████████████ `100%` |
 | Terminal module           | ████████████████████ `100%` |
 | File module               | ████████████████████ `100%` |
+| Clipboard module          | ████████████████████ `100%` |
 | History module            | ████████████████████ `100%` |
 | Rendering abstraction     | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
 | Input command abstraction | ░░░░░░░░░░░░░░░░░░░░ `0%`   |
@@ -188,15 +198,19 @@ Dosh currently provides basic text editing capabilities, including character ins
 
 ```text
 dosh/
+
 ├── cmd/
 │   └── dosh/
 │       └── main.go
 ├── internal/
+│   ├── clipboard/
+│   │   └── clipboard.go
 │   ├── editor/
 │   │   ├── editor.go
 │   │   ├── grapheme.go
 │   │   ├── history.go
-│   │   └── line.go
+│   │   ├── line.go
+│   │   └── selection.go
 │   ├── file/
 │   │   └── file.go
 │   ├── input/

@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/term"
 
+	"github.com/avieira-dev/dosh/internal/clipboard"
 	"github.com/avieira-dev/dosh/internal/editor"
 	"github.com/avieira-dev/dosh/internal/file"
 	"github.com/avieira-dev/dosh/internal/input"
@@ -104,6 +105,7 @@ func main() {
 	fileName := ""
 
 	running := true
+
 	for running {
 		select {
 		case key := <-keys:
@@ -194,7 +196,6 @@ func main() {
 				}
 
 				editor.Render(&ed, size, fileDisplayName(openFile))
-
 				continue
 			}
 
@@ -223,6 +224,7 @@ func main() {
 						} else {
 							ed.StatusMessage = "No match found!"
 						}
+
 						statusTimer.Reset(2 * time.Second)
 
 					case input.KeyCtrlA:
@@ -279,7 +281,6 @@ func main() {
 				}
 
 				editor.Render(&ed, size, fileDisplayName(openFile))
-
 				continue
 			}
 
@@ -291,27 +292,94 @@ func main() {
 				switch value {
 				case input.KeyArrowUp:
 					ed.MoveUp()
+
 				case input.KeyArrowDown:
 					ed.MoveDown()
+
 				case input.KeyArrowLeft:
 					ed.MoveLeft()
+
 				case input.KeyArrowRight:
 					ed.MoveRight()
+
+				case input.KeyShiftArrowUp:
+					ed.SelectUp()
+
+				case input.KeyShiftArrowDown:
+					ed.SelectDown()
+
+				case input.KeyShiftArrowLeft:
+					ed.SelectLeft()
+
+				case input.KeyShiftArrowRight:
+					ed.SelectRight()
+
+				case input.KeyShiftCtrlLeft:
+					ed.SelectWordLeft()
+
+				case input.KeyShiftCtrlRight:
+					ed.SelectWordRight()
+
+				case input.KeyShiftHome:
+					ed.SelectHome()
+
+				case input.KeyShiftEnd:
+					ed.SelectEnd()
+
 				case input.KeyCtrlC:
+					if ed.HasSelection() {
+						if err := clipboard.Copy(ed.SelectedText()); err != nil {
+							ed.StatusMessage = "Error copying selection!"
+						} else {
+							ed.StatusMessage = "Copied!"
+						}
+
+						statusTimer.Reset(2 * time.Second)
+					}
+
+				case input.KeyCtrlX:
+					if ed.HasSelection() {
+						if err := clipboard.Copy(ed.SelectedText()); err != nil {
+							ed.StatusMessage = "Error cutting selection!"
+						} else if ed.DeleteSelection() {
+							ed.StatusMessage = "Cut!"
+						}
+
+						statusTimer.Reset(2 * time.Second)
+					}
+
+				case input.KeyCtrlV:
+					text, err := clipboard.Paste()
+
+					if err != nil {
+						ed.StatusMessage = "Clipboard is empty!"
+					} else {
+						ed.InsertText(text)
+						ed.StatusMessage = "Pasted!"
+					}
+
+					statusTimer.Reset(2 * time.Second)
+
+				case input.KeyCtrlQ:
 					if !ed.Dirty {
 						running = false
 					} else {
 						confirmExit = true
 						ed.StatusMessage = "Unsaved changes. Exit anyway? (y/n)"
 					}
+
 				case input.KeyCtrlLeft:
 					ed.MoveWordLeft()
+
 				case input.KeyCtrlRight:
 					ed.MoveWordRight()
+
 				case input.KeyBackspace:
 					ed.Backspace()
+
 				case input.KeyCtrlK:
 					ed.DeleteLineContent()
+
 				case input.KeyCtrlS:
 					if openFile == nil {
 						inputFileName = true
@@ -320,11 +388,16 @@ func main() {
 					} else {
 						saveFile(&ed, openFile, statusTimer)
 					}
+
 				case input.KeyCtrlF:
+					ed.ClearSelection()
 					inputWord = true
 					ed.SearchQuery = ""
 					ed.StatusMessage = "Search: "
+
 				case input.KeyCtrlR:
+					ed.ClearSelection()
+
 					if ed.SearchQuery == "" {
 						ed.StatusMessage = "Search for a term first (Ctrl+F)!"
 						statusTimer.Reset(2 * time.Second)
@@ -333,20 +406,27 @@ func main() {
 						ed.ReplaceQuery = ""
 						ed.StatusMessage = "Replace with: "
 					}
+
 				case input.KeyCtrlZ:
 					ed.Undo()
 					statusTimer.Reset(2 * time.Second)
+
 				case input.KeyCtrlY:
 					ed.Redo()
 					statusTimer.Reset(2 * time.Second)
+
 				case input.KeyTab:
 					ed.Tab()
+
 				case input.KeyEnter:
 					ed.Enter()
+
 				case input.KeyDelete:
 					ed.Delete()
+
 				case input.KeyHome:
 					ed.Home()
+
 				case input.KeyEnd:
 					ed.End()
 				}

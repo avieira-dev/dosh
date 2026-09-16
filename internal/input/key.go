@@ -17,6 +17,15 @@ const (
 	KeyCtrlRight
 	KeyCtrlF
 
+	KeyShiftArrowUp
+	KeyShiftArrowDown
+	KeyShiftArrowLeft
+	KeyShiftArrowRight
+	KeyShiftHome
+	KeyShiftEnd
+	KeyShiftCtrlLeft
+	KeyShiftCtrlRight
+
 	KeyBackspace
 	KeyDelete
 	KeyEnter
@@ -27,6 +36,9 @@ const (
 	KeyCtrlY
 	KeyCtrlR
 	KeyCtrlA
+	KeyCtrlV
+	KeyCtrlX
+	KeyCtrlQ
 
 	KeyEscape
 	KeyCtrlC

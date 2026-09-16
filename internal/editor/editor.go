@@ -11,17 +11,21 @@ import (
 )
 
 type Editor struct {
-	Lines         []Line
-	Row           int
-	Column        int
-	DesiredColumn int
-	ScrollRow     int
-	StatusMessage string
-	Dirty         bool
-	SearchQuery   string
-	ReplaceQuery  string
-	History       *History
-	lastAction    string
+	Lines                 []Line
+	Row                   int
+	Column                int
+	DesiredColumn         int
+	ScrollRow             int
+	StatusMessage         string
+	Dirty                 bool
+	SearchQuery           string
+	ReplaceQuery          string
+	History               *History
+	selectionAnchorRow    int
+	selectionAnchorColumn int
+	selectionActive       bool
+	selecting             bool
+	lastAction            string
 }
 
 func NewEditor(lines []Line) Editor {
@@ -183,6 +187,8 @@ func (ed *Editor) replaceAt(row int, column int) {
 }
 
 func (ed *Editor) ReplaceCurrentMatch() bool {
+	ed.ClearSelection()
+
 	if !ed.matchAtCursor() {
 		row, column := ed.FindNextMatch()
 
@@ -212,6 +218,8 @@ func (ed *Editor) ReplaceCurrentMatch() bool {
 }
 
 func (ed *Editor) ReplaceAll() int {
+	ed.ClearSelection()
+
 	query := []rune(ed.SearchQuery)
 
 	if len(query) == 0 {
@@ -253,6 +261,7 @@ func (ed *Editor) restore(snapshot Snapshot) {
 	ed.DesiredColumn = snapshot.Column
 	ed.Dirty = true
 	ed.lastAction = ""
+	ed.ClearSelection()
 }
 
 func (ed *Editor) beginChange(kind string) {
@@ -303,6 +312,10 @@ func (ed *Editor) Redo() {
 func (ed *Editor) Insert(value input.SimpleKey) {
 	ed.beginChange("insert")
 
+	if ed.HasSelection() {
+		ed.deleteSelection()
+	}
+
 	ed.Lines[ed.Row].Content = append(ed.Lines[ed.Row].Content, 0)
 	copy(ed.Lines[ed.Row].Content[ed.Column+1:], ed.Lines[ed.Row].Content[ed.Column:])
 	ed.Lines[ed.Row].Content[ed.Column] = rune(value)
@@ -313,6 +326,12 @@ func (ed *Editor) Insert(value input.SimpleKey) {
 
 func (ed *Editor) Backspace() {
 	ed.beginChange("backspace")
+
+	if ed.HasSelection() {
+		ed.deleteSelection()
+		ed.Dirty = true
+		return
+	}
 
 	if ed.Column > 0 {
 		current := ed.Lines[ed.Row].Content
@@ -341,6 +360,12 @@ func (ed *Editor) Backspace() {
 func (ed *Editor) Delete() {
 	ed.beginChange("delete")
 
+	if ed.HasSelection() {
+		ed.deleteSelection()
+		ed.Dirty = true
+		return
+	}
+
 	currentLine := ed.Lines[ed.Row].Content
 
 	if ed.Column < len(currentLine) {
@@ -366,6 +391,7 @@ func (ed *Editor) Delete() {
 
 func (ed *Editor) DeleteLineContent() {
 	ed.beginChange("deleteline")
+	ed.ClearSelection()
 
 	if len(ed.Lines[ed.Row].Content) > 0 {
 		ed.Lines[ed.Row].Content = nil
@@ -384,6 +410,10 @@ func (ed *Editor) Tab() {
 
 func (ed *Editor) Enter() {
 	ed.beginChange("enter")
+
+	if ed.HasSelection() {
+		ed.deleteSelection()
+	}
 
 	line := ed.Lines[ed.Row].Content
 	before := line[:ed.Column]
@@ -406,6 +436,10 @@ func (ed *Editor) Enter() {
 }
 
 func (ed *Editor) moveVertical(delta int) {
+	if !ed.selecting {
+		ed.ClearSelection()
+	}
+
 	newRow := ed.Row + delta
 
 	if newRow < 0 || newRow >= len(ed.Lines) {
@@ -459,6 +493,10 @@ func (ed *Editor) Scroll(size terminal.Size) {
 }
 
 func (ed *Editor) MoveLeft() {
+	if !ed.selecting {
+		ed.ClearSelection()
+	}
+
 	if ed.Column == 0 {
 		if ed.Row > 0 {
 			ed.Row--
@@ -472,6 +510,10 @@ func (ed *Editor) MoveLeft() {
 }
 
 func (ed *Editor) MoveRight() {
+	if !ed.selecting {
+		ed.ClearSelection()
+	}
+
 	if ed.Column < len(ed.Lines[ed.Row].Content) {
 		ed.Column = nextGraphemeEnd(ed.Lines[ed.Row].Content, ed.Column)
 		ed.DesiredColumn = ed.Column
@@ -483,6 +525,10 @@ func (ed *Editor) MoveRight() {
 }
 
 func (ed *Editor) MoveWordLeft() {
+	if !ed.selecting {
+		ed.ClearSelection()
+	}
+
 	if ed.Column == 0 {
 		if ed.Row == 0 {
 			return
@@ -503,6 +549,10 @@ func (ed *Editor) MoveWordLeft() {
 }
 
 func (ed *Editor) MoveWordRight() {
+	if !ed.selecting {
+		ed.ClearSelection()
+	}
+
 	if ed.Column >= len(ed.Lines[ed.Row].Content) {
 		if ed.Row >= len(ed.Lines)-1 {
 			return
@@ -523,11 +573,19 @@ func (ed *Editor) MoveWordRight() {
 }
 
 func (ed *Editor) Home() {
+	if !ed.selecting {
+		ed.ClearSelection()
+	}
+
 	ed.Column = 0
 	ed.DesiredColumn = ed.Column
 }
 
 func (ed *Editor) End() {
+	if !ed.selecting {
+		ed.ClearSelection()
+	}
+
 	ed.Column = len(ed.Lines[ed.Row].Content)
 	ed.DesiredColumn = ed.Column
 }
@@ -542,8 +600,8 @@ func gutterWidth(lineCount int) int {
 	return digits + 1
 }
 
-func writeHighlightedLine(buf *strings.Builder, content []rune, query []rune, isCurrentLine bool) {
-	if len(query) == 0 {
+func writeHighlightedLine(buf *strings.Builder, content []rune, query []rune, isCurrentLine bool, selectionStart int, selectionEnd int, selected bool) {
+	if len(query) == 0 && !selected {
 		buf.WriteString(string(content))
 		return
 	}
@@ -556,25 +614,40 @@ func writeHighlightedLine(buf *strings.Builder, content []rune, query []rune, is
 	matches := findAllMatchStarts(content, query)
 	matchLen := len(query)
 	matchIndex := 0
-	i := 0
 
-	for i < len(content) {
+	for i := 0; i < len(content); {
+		if selected && i >= selectionStart && i < selectionEnd {
+			buf.WriteString(terminal.SelectionBg)
+			buf.WriteString(terminal.SelectionFg)
+			buf.WriteRune(content[i])
+			buf.WriteString(terminal.Reset)
+			buf.WriteString(baseBg)
+			i++
+			continue
+		}
+
 		for matchIndex < len(matches) && matches[matchIndex] < i {
 			matchIndex++
 		}
 
 		if matchIndex < len(matches) && matches[matchIndex] == i {
-			buf.WriteString(terminal.MatchBg)
-			buf.WriteString(terminal.MatchFg)
-			buf.WriteString(string(content[i : i+matchLen]))
-			buf.WriteString(terminal.Reset)
-			buf.WriteString(baseBg)
-			i += matchLen
+			matchEnd := i + matchLen
+
+			if !(selected && i < selectionEnd && matchEnd > selectionStart) {
+				buf.WriteString(terminal.MatchBg)
+				buf.WriteString(terminal.MatchFg)
+				buf.WriteString(string(content[i:matchEnd]))
+				buf.WriteString(terminal.Reset)
+				buf.WriteString(baseBg)
+				i = matchEnd
+				matchIndex++
+				continue
+			}
+
 			matchIndex++
-			continue
 		}
 
-		buf.WriteString(string(content[i]))
+		buf.WriteRune(content[i])
 		i++
 	}
 }
@@ -614,6 +687,7 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		buf.WriteString(terminal.ClearLineSeq())
 
 		lineIndex := ed.ScrollRow + i
+
 		if lineIndex >= len(ed.Lines) {
 			continue
 		}
@@ -637,7 +711,9 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		}
 
 		line := ed.Lines[lineIndex]
-		writeHighlightedLine(&buf, line.Content, query, isCurrent)
+		selectionStart, selectionEnd, selected := ed.selectionBounds(lineIndex)
+
+		writeHighlightedLine(&buf, line.Content, query, isCurrent, selectionStart, selectionEnd, selected)
 
 		if isCurrent {
 			padding := size.Width - gw - displayWidth(line.Content)
@@ -683,11 +759,15 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 			{"^S", "Save"},
 			{"^F", "Find"},
 			{"^R", "Replace"},
-			{"^Z", "Undo"},
-			{"^Y", "Redo"},
-			{"^C", "Quit"},
-			{"^K", "Del Line"},
+			{"^Z/^Y", "Undo/Redo"},
+			{"^C", "Copy"},
+			{"^X", "Cut"},
+			{"^V", "Paste"},
 			{"^←/^→", "Word"},
+			{"⇧+←/→", "Select"},
+			{"⇧+Home/End", "Select Line"},
+			{"⇧+Ctrl+←/→", "Select Word"},
+			{"^Q", "Quit"},
 		}
 
 		buf.WriteString("        ")

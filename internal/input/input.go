@@ -1,16 +1,14 @@
 package input
 
-import (
-	"os"
-)
+import "os"
 
 func ReadKey() Key {
 	parser := Parser{}
-
 	buffer := make([]byte, 1)
 
 	for {
 		_, err := os.Stdin.Read(buffer)
+
 		if err != nil {
 			return Key{}
 		}

@@ -10,10 +10,10 @@ func previousGraphemeStart(line []rune, column int) int {
 	}
 
 	text := string(line)
-
 	byteColumn := len(string(line[:column]))
 
 	gr := uniseg.NewGraphemes(text)
+
 	for gr.Next() {
 		start, end := gr.Positions()
 
@@ -30,6 +30,7 @@ func nextGraphemeEnd(line []rune, column int) int {
 	byteColumn := len(string(line[:column]))
 
 	gr := uniseg.NewGraphemes(text)
+
 	for gr.Next() {
 		start, end := gr.Positions()
 

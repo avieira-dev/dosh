@@ -31,4 +31,6 @@ const (
 	CurrentLineBg  = "\033[48;5;235m"
 	MatchBg        = "\033[48;5;250m"
 	MatchFg        = "\033[38;5;233m"
+	SelectionBg    = "\033[48;5;238m"
+	SelectionFg    = "\033[38;5;255m"
 )
