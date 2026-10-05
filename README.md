@@ -18,7 +18,7 @@
 
 The project focuses on building a simple and efficient editing environment from the ground up, with direct terminal interaction and a minimal dependency footprint.
 
-Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, auto-indentation, multiline editing, Unicode text support, responsive layout resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, text search with match highlighting, text replacement, and undo/redo.
+Dosh currently provides basic text editing capabilities, including character insertion, deletion, line content deletion, cursor movement, word navigation, tab insertion, auto-indentation, multiline editing, soft line wrapping, Unicode text support, responsive layout resizing, screen scrolling, a status bar, file opening, file saving, new file creation, unsaved changes detection, overwrite confirmation, exit confirmation, text search with match highlighting, text replacement, and undo/redo.
 
 > [!IMPORTANT]  
 > Dosh is under active development and may be unstable or contain bugs. Features are still being implemented and tested, so it is not recommended for editing important files yet.
@@ -72,13 +72,16 @@ Dosh currently provides basic text editing capabilities, including character ins
 - Multiline text editing
 - Horizontal cursor movement
 - Vertical cursor movement
+- Soft line wrapping at the terminal width
+- Grapheme cluster-aware line wrapping
+- Visual-line cursor navigation (Up / Down)
 - Arrow key support
-- Home and End navigation
+- Home and End navigation (per visual line)
 - Word navigation
 - Ctrl + Left / Ctrl + Right navigation
 - Shift + Arrow selection
 - Shift + Home / Shift + End selection
-- Shift + Ctrl + Left / Shift + Ctrl + Right word selection
+- Shift + Home / Shift + End selection (per visual line)
 - Multi-line text selection
 - Copy with Ctrl + C
 - Cut with Ctrl + X
@@ -124,6 +127,7 @@ Dosh currently provides basic text editing capabilities, including character ins
 | Multiline editing          | ████████████████████ `100%` |
 | Horizontal cursor movement | ████████████████████ `100%` |
 | Vertical cursor movement   | ████████████████████ `100%` |
+| Soft line wrapping         | ████████████████████ `100%` |
 | Backspace line merging     | ████████████████████ `100%` |
 | Delete character           | ████████████████████ `100%` |
 | Delete line merging        | ████████████████████ `100%` |
@@ -212,6 +216,7 @@ dosh/
 │   │   ├── history.go
 │   │   ├── line.go
 │   │   └── selection.go
+│   │   └── wrap.go
 │   ├── file/
 │   │   └── file.go
 │   ├── input/
