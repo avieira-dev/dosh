@@ -1,6 +1,8 @@
 package editor
 
-import "strings"
+import ( 
+	"strings"
+)
 
 func (ed *Editor) ClearSelection() {
 	ed.selectionActive = false

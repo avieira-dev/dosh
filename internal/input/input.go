@@ -1,6 +1,8 @@
 package input
 
-import "os"
+import (
+	"os"
+)
 
 func ReadKey() Key {
 	parser := Parser{}
