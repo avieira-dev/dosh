@@ -17,6 +17,7 @@ type Editor struct {
 	Column                int
 	DesiredColumn         int
 	ScrollRow             int
+	WrapWidth             int
 	StatusMessage         string
 	Dirty                 bool
 	SearchQuery           string
@@ -27,6 +28,10 @@ type Editor struct {
 	selectionActive       bool
 	selecting             bool
 	lastAction            string
+	vertDesired           int
+	vertAnchorRow         int
+	vertAnchorColumn      int
+	vertActive            bool
 }
 
 func NewEditor(lines []Line) Editor {
@@ -507,26 +512,30 @@ func (ed *Editor) moveVertical(delta int) {
 		ed.ClearSelection()
 	}
 
-	newRow := ed.Row + delta
+	rows := ed.visualRows(ed.wrapWidth())
+	current, visualColumn := cursorVisual(rows, ed.Lines, ed.Row, ed.Column)
 
-	if newRow < 0 || newRow >= len(ed.Lines) {
+	target := current + delta
+	if target < 0 || target >= len(rows) {
 		return
 	}
 
-	ed.Row = newRow
-
-	currentLineLength := len(ed.Lines[ed.Row].Content)
-
-	if currentLineLength < ed.DesiredColumn {
-		ed.Column = currentLineLength
-	} else {
-		ed.Column = ed.DesiredColumn
+	if !ed.vertActive || ed.vertAnchorRow != ed.Row || ed.vertAnchorColumn != ed.Column {
+		ed.vertDesired = visualColumn
 	}
 
-	ed.Column = normalizeGraphemeColumn(
-		ed.Lines[ed.Row].Content,
-		ed.Column,
-	)
+	vr := rows[target]
+	line := ed.Lines[vr.Line].Content
+
+	column := columnAtVisualWidth(line, vr, ed.vertDesired, isLastOfLine(rows, target))
+
+	ed.Row = vr.Line
+	ed.Column = column
+	ed.DesiredColumn = column
+
+	ed.vertAnchorRow = ed.Row
+	ed.vertAnchorColumn = ed.Column
+	ed.vertActive = true
 }
 
 func (ed *Editor) MoveUp() {
@@ -540,23 +549,21 @@ func (ed *Editor) MoveDown() {
 func (ed *Editor) Scroll(size terminal.Size) {
 	editorHeight := size.Height - 3
 
-	if ed.Row < ed.ScrollRow {
-		ed.ScrollRow = ed.Row
+	ed.WrapWidth = ed.textWidth(size)
+
+	rows := ed.visualRows(ed.WrapWidth)
+	cursorRow, _ := cursorVisual(rows, ed.Lines, ed.Row, ed.Column)
+
+	if cursorRow < ed.ScrollRow {
+		ed.ScrollRow = cursorRow
 	}
 
-	if ed.Row >= ed.ScrollRow+editorHeight {
-		ed.ScrollRow = ed.Row - editorHeight + 1
+	if cursorRow >= ed.ScrollRow+editorHeight {
+		ed.ScrollRow = cursorRow - editorHeight + 1
 	}
 
-	maxScrollRow := len(ed.Lines) - editorHeight
-
-	if maxScrollRow < 0 {
-		maxScrollRow = 0
-	}
-
-	if ed.ScrollRow > maxScrollRow {
-		ed.ScrollRow = maxScrollRow
-	}
+	maxScrollRow := max(len(rows)-editorHeight, 0)
+	ed.ScrollRow = min(ed.ScrollRow, maxScrollRow)
 }
 
 func (ed *Editor) MoveLeft() {
@@ -644,7 +651,10 @@ func (ed *Editor) Home() {
 		ed.ClearSelection()
 	}
 
-	ed.Column = 0
+	rows := ed.visualRows(ed.wrapWidth())
+	index, _ := cursorVisual(rows, ed.Lines, ed.Row, ed.Column)
+
+	ed.Column = rows[index].Start
 	ed.DesiredColumn = ed.Column
 }
 
@@ -653,7 +663,10 @@ func (ed *Editor) End() {
 		ed.ClearSelection()
 	}
 
-	ed.Column = len(ed.Lines[ed.Row].Content)
+	rows := ed.visualRows(ed.wrapWidth())
+	index, _ := cursorVisual(rows, ed.Lines, ed.Row, ed.Column)
+
+	ed.Column = visualRowEnd(rows, index, ed.Lines)
 	ed.DesiredColumn = ed.Column
 }
 
@@ -753,48 +766,54 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 	gw := gutterWidth(len(ed.Lines))
 	query := []rune(ed.SearchQuery)
 
-	maxLineContentWidth := size.Width - gw
-	if maxLineContentWidth < 0 {
-		maxLineContentWidth = 0
-	}
+	rows := ed.visualRows(ed.textWidth(size))
 
 	for i := 0; i < editorHeight; i++ {
 		buf.WriteString(terminal.MoveCursorSeq(i+2, 1))
 		buf.WriteString(terminal.ClearLineSeq())
 
-		lineIndex := ed.ScrollRow + i
+		visIndex := ed.ScrollRow + i
 
-		if lineIndex >= len(ed.Lines) {
+		if visIndex >= len(rows) {
 			continue
 		}
 
-		isCurrent := lineIndex == ed.Row
-		lineNumberField := fmt.Sprintf("%*d ", gw-1, lineIndex+1)
+		vr := rows[visIndex]
+		isCurrent := vr.Line == ed.Row
+
+		lineNumberField := strings.Repeat(" ", gw)
+		if vr.Start == 0 {
+			lineNumberField = fmt.Sprintf("%*d ", gw-1, vr.Line+1)
+		}
 
 		if isCurrent {
 			buf.WriteString(terminal.CurrentLineBg)
 			buf.WriteString(terminal.GutterActiveFg)
-			buf.WriteString(lineNumberField)
 		} else {
 			buf.WriteString(terminal.GutterFg)
-			buf.WriteString(lineNumberField)
 		}
 
+		buf.WriteString(lineNumberField)
 		buf.WriteString(terminal.Reset)
 
 		if isCurrent {
 			buf.WriteString(terminal.CurrentLineBg)
 		}
 
-		line := ed.Lines[lineIndex]
+		content := ed.Lines[vr.Line].Content[vr.Start:vr.End]
 
-		visibleContent := truncateRunes(line.Content, maxLineContentWidth)
-		selectionStart, selectionEnd, selected := ed.selectionBounds(lineIndex)
+		selectionStart, selectionEnd, selected := ed.selectionBounds(vr.Line)
 
-		writeHighlightedLine(&buf, visibleContent, query, isCurrent, selectionStart, selectionEnd, selected)
+		if selected {
+			selectionStart = max(selectionStart-vr.Start, 0)
+			selectionEnd = min(selectionEnd-vr.Start, len(content))
+			selected = selectionStart < selectionEnd
+		}
+
+		writeHighlightedLine(&buf, content, query, isCurrent, selectionStart, selectionEnd, selected)
 
 		if isCurrent {
-			padding := size.Width - gw - displayWidth(visibleContent)
+			padding := size.Width - gw - displayWidth(content)
 			if padding > 0 {
 				buf.WriteString(strings.Repeat(" ", padding))
 			}
@@ -872,11 +891,11 @@ func Render(ed *Editor, size terminal.Size, fileName string) {
 		}
 	}
 
-	cursorColumn := displayWidth(ed.Lines[ed.Row].Content[:ed.Column])
+	cursorRow, cursorColumn := cursorVisual(rows, ed.Lines, ed.Row, ed.Column)
 
 	buf.WriteString(
 		terminal.MoveCursorSeq(
-			ed.Row-ed.ScrollRow+2,
+			cursorRow-ed.ScrollRow+2,
 			cursorColumn+gw+1,
 		),
 	)
